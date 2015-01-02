@@ -3,5 +3,6 @@
 #include "utils.h"
 
 Mesh objLoad(const char* filename);
+MeshVBO meshLoad(const char* filename);
 
 #endif

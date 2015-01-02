@@ -20,7 +20,7 @@ NormalMatrixLocation,
 texImageLocation,
 triangleCount,
 eartTextureID,
-BufferIds[4] = { 0 },
+BufferIds[3] = { 0 },
 ShaderIds[3] = { 0 };
 
 Matrix
@@ -189,7 +189,7 @@ void TimerFunction(int Value)
 
 void CreateMesh(const char* filename)
 {
-	Mesh theMesh = objLoad(filename);
+	MeshVBO theMesh = meshLoad(filename);
 
 	ShaderIds[0] = glCreateProgram();
 	ExitOnGLError("ERROR: Could not create the shader program");
@@ -239,17 +239,24 @@ void CreateMesh(const char* filename)
 	glEnableVertexAttribArray(2);
 	ExitOnGLError("ERROR: Could not enable vertex attributes");
 
-	glGenBuffers(3, &BufferIds[1]);
+	glGenBuffers(2, &BufferIds[1]);
 	ExitOnGLError("ERROR: Could not generate the buffer objects");
 	int nbuffersize;
-	std::vector<Vec3> vert = theMesh.Vertices;
 	glBindBuffer(GL_ARRAY_BUFFER, BufferIds[1]);
-	glBufferData(GL_ARRAY_BUFFER, theMesh.Vertices.size()*sizeof(Vec3), &vert[0], GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glBufferData(GL_ARRAY_BUFFER, theMesh.vertexBuffer.size()*sizeof(Vertex), &theMesh.vertexBuffer[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(struct Vertex,normal)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(struct Vertex, texCoord)));
 	ExitOnGLError("ERROR: Could not bind the Vertex VBO to the VAO");
 	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &nbuffersize);
 	printf("%d ", nbuffersize);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferIds[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, theMesh.indexBuffer.size()*sizeof(unsigned int), &theMesh.indexBuffer[0], GL_STATIC_DRAW);
+
+	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &nbuffersize);
+	printf("%d ", nbuffersize);
+/*
 	vert = theMesh.Normals;
 	glBindBuffer(GL_ARRAY_BUFFER, BufferIds[2]);
 	glBufferData(GL_ARRAY_BUFFER, theMesh.Normals.size()*sizeof(Vec3), &vert[0], GL_STATIC_DRAW);
@@ -265,9 +272,9 @@ void CreateMesh(const char* filename)
 	ExitOnGLError("ERROR: Could not bind the Texture VBO to the VAO");
 	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &nbuffersize);
 	printf("%d\n", nbuffersize);
-
+*/
 	ExitOnGLError("ERROR: Could not set VAO attributes");
-	triangleCount = theMesh.size;
+	triangleCount = theMesh.indexBuffer.size();
 
 	glBindVertexArray(0);
 
@@ -284,10 +291,6 @@ void CreateMesh(const char* filename)
 	glBindTexture(GL_TEXTURE_2D, eartTextureID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
 	glTexStorage2D(GL_TEXTURE_2D,
 		GLint(Texture.levels()),
 		GLenum(gli::internal_format(Texture.format())),
@@ -371,8 +374,10 @@ void DrawCube(void)
 
 	glBindVertexArray(BufferIds[0]);
 	ExitOnGLError("ERROR: Could not bind the VAO for drawing purposes");
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferIds[2]);
 
-	glDrawArrays(GL_TRIANGLES, 0, triangleCount*3);
+	glDrawElements(GL_TRIANGLES, triangleCount, GL_UNSIGNED_INT,0);
+	//glDrawArrays(GL_TRIANGLES, 0, triangleCount*3);
 	//glutSolidTeapot(1);
 	ExitOnGLError("ERROR: Could not draw the cube");
 

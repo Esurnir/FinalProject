@@ -43,7 +43,7 @@ void main(void)
 		spec = mymaterial.specular * pow(intSpec, mymaterial.shininess);
 		
 	}
-	vec4 texColor = texture(texImage, vec2(ex_texCoord.s, 1.0 - ex_texCoord.t));
+	vec4 texColor = texture(texImage, vec2(ex_texCoord.s, ex_texCoord.t));
 	vec4 diffColor = intensity * mymaterial.diffuse * texColor;
 	vec4 ambColor = mymaterial.ambient * texColor;
 
