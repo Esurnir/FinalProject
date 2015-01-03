@@ -41,14 +41,11 @@ void main(void)
 		// compute the specular term into spec
 		float intSpec = max(dot(h, n), 0.0);
 		spec = mymaterial.specular * pow(intSpec, mymaterial.shininess);
-		
 	}
 	vec4 texColor = texture(texImage, vec2(ex_texCoord.s, ex_texCoord.t));
 	vec4 diffColor = intensity * mymaterial.diffuse * texColor;
 	vec4 ambColor = mymaterial.ambient * texColor;
 
 	out_Color = max(diffColor + spec, ambColor);
-	
-	//out_Color = vec4(debugNormal,1.0);
-	//out_Color = vec4(ex_texCoord, 0, 1.0);
+
 }

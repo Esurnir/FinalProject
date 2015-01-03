@@ -10,10 +10,9 @@ out vec3 debugNormal;
  
 uniform mat3 NormalInvMatrix;
 uniform mat3 matricialInverse;
-uniform mat4 ModelMatrix;
-uniform mat4 ViewMatrix;
+uniform mat4 mvMatrix;
 uniform mat4 ProjectionMatrix;
-uniform mat4 banana;
+uniform mat4 mvpMatrix;
 
 
 
@@ -23,10 +22,10 @@ void main(void)
 {
 	debugNormal = (in_Normal + 1) * 0.5;
 	vec4 p = vec4(in_Position, 1.0);
-	gl_Position = (ProjectionMatrix * ViewMatrix * ModelMatrix) * p;
+	gl_Position = mvpMatrix * p;
 	vec3 test = NormalInvMatrix*in_Normal;
 	ex_Normal = normalize(test);
 	ex_texCoord = in_texCoord ;
-	ex_eye = -(ViewMatrix*ModelMatrix*p);
+	ex_eye = -(mvMatrix*p);
 
 }

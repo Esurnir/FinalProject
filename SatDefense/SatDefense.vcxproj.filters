@@ -34,14 +34,14 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="SimpleShader.fragment.glsl">
-      <Filter>Source Files</Filter>
-    </Text>
-    <Text Include="SimpleShader.vertex.glsl">
-      <Filter>Source Files</Filter>
-    </Text>
     <Text Include="earth.obj" />
     <Text Include="carver.obj" />
+    <Text Include="EarthShader.fragment.glsl">
+      <Filter>Source Files</Filter>
+    </Text>
+    <Text Include="EarthShader.vertex.glsl">
+      <Filter>Source Files</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Image Include="earth.dds">

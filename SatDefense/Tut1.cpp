@@ -1,6 +1,7 @@
 #include "Utils.h"
 #include "objLoader.h"
 #include <gli/gli.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #define WINDOW_TITLE_PREFIX "Chapter 4"
 
@@ -12,13 +13,12 @@ WindowHandle = 0;
 unsigned FrameCount = 0;
 
 GLuint
-ProjectionMatrixUniformLocation,
-ViewMatrixUniformLocation,
-ModelMatrixUniformLocation,
+mvMatrixUniformLocation,
 lDirUniformLocation,
 NormalMatrixLocation,
 texImageLocation,
 triangleCount,
+mvpMatrixUniformLocation,
 eartTextureID,
 BufferIds[3] = { 0 },
 ShaderIds[3] = { 0 };
@@ -135,17 +135,6 @@ void ResizeFunction(int Width, int Height)
 	CurrentWidth = Width;
 	CurrentHeight = Height;
 	glViewport(0, 0, CurrentWidth, CurrentHeight);
-	ProjectionMatrix =
-		CreateProjectionMatrix(
-		60,
-		(float)CurrentWidth / CurrentHeight,
-		1.0f,
-		100.0f
-		);
-
-	glUseProgram(ShaderIds[0]);
-	glUniformMatrix4fv(ProjectionMatrixUniformLocation, 1, GL_FALSE, ProjectionMatrix.m);
-	glUseProgram(0);
 }
 
 void RenderFunction(void)
@@ -194,8 +183,8 @@ void CreateMesh(const char* filename)
 	ShaderIds[0] = glCreateProgram();
 	ExitOnGLError("ERROR: Could not create the shader program");
 	{
-		ShaderIds[1] = LoadShader("SimpleShader.fragment.glsl", GL_FRAGMENT_SHADER);
-		ShaderIds[2] = LoadShader("SimpleShader.vertex.glsl", GL_VERTEX_SHADER);
+		ShaderIds[1] = LoadShader("EarthShader.fragment.glsl", GL_FRAGMENT_SHADER);
+		ShaderIds[2] = LoadShader("EarthShader.vertex.glsl", GL_VERTEX_SHADER);
 		glAttachShader(ShaderIds[0], ShaderIds[1]);
 		glAttachShader(ShaderIds[0], ShaderIds[2]);
 	}
@@ -207,12 +196,12 @@ void CreateMesh(const char* filename)
 	fprintf(stderr, "%s\n", progStatus);
 
 
-	ModelMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "ModelMatrix");
-	ViewMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "ViewMatrix");
-	ProjectionMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "ProjectionMatrix");
 	NormalMatrixLocation = glGetUniformLocation(ShaderIds[0], "NormalInvMatrix");
 	lDirUniformLocation = glGetUniformLocation(ShaderIds[0], "lDir");
 	texImageLocation = glGetUniformLocation(ShaderIds[0], "texImage");
+	mvpMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvpMatrix");
+	mvMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvMatrix");
+	
 
 	
 	ExitOnGLError("ERROR: Could not get shader uniform locations");
@@ -353,18 +342,23 @@ void DrawCube(void)
 	CubeRotation += 45.0f * ((float)(Now - LastTime) / CLOCKS_PER_SEC);
 	CubeAngle = DegreesToRadians(CubeRotation);
 	LastTime = Now;
+	glm::mat4 modMatrix = glm::rotate(glm::mat4(),CubeAngle,glm::vec3(1.0f,0.0f,0.0f));
+	modMatrix = glm::rotate(modMatrix, CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
+	glm::mat4 projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 100.0f);
+	glm::mat4 mvp = projMatrix*viewMatrix*modMatrix;
+	glm::mat4 mv = viewMatrix*modMatrix;
 
-	ModelMatrix = IDENTITY_MATRIX;
-	RotateAboutY(&ModelMatrix, CubeAngle);
-	RotateAboutX(&ModelMatrix, CubeAngle);
-	glm::mat3 normalMatrix = TransposeInverse3x3ModelView(&ModelMatrix, &ViewMatrix);
+	
+	glm::mat3 normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix*modMatrix));// TransposeInverse3x3ModelView(&ModelMatrix, &ViewMatrix);
 
 	glUseProgram(ShaderIds[0]);
 	ExitOnGLError("ERROR: Could not use the shader program");
 
-	glUniformMatrix4fv(ModelMatrixUniformLocation, 1, GL_FALSE, ModelMatrix.m);
-	glUniformMatrix4fv(ViewMatrixUniformLocation, 1, GL_FALSE, ViewMatrix.m);
+	
 	glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &normalMatrix[0][0]);
+	glUniformMatrix4fv(mvpMatrixUniformLocation, 1, GL_FALSE, &mvp[0][0]);
+	glUniformMatrix4fv(mvMatrixUniformLocation, 1, GL_FALSE, &mv[0][0]);
 	glUniform3f(lDirUniformLocation, 1, 0, 0 );
 	glUniform1i(texImageLocation, 0);
 	ExitOnGLError("ERROR: Could not set the shader uniforms");

@@ -89,12 +89,12 @@
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="SimpleShader.fragment.glsl">
+    <Text Include="EarthShader.fragment.glsl">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <DeploymentContent>true</DeploymentContent>
     </Text>
-    <Text Include="SimpleShader.vertex.glsl">
+    <Text Include="EarthShader.vertex.glsl">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <DeploymentContent>true</DeploymentContent>
