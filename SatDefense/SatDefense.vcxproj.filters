@@ -52,6 +52,7 @@
     <Image Include="spec.dds" />
     <Image Include="earth.dds" />
     <Image Include="night.dds" />
+    <Image Include="Displacement.dds" />
   </ItemGroup>
   <ItemGroup>
     <None Include="freeglut.dll" />

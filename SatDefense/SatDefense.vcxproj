@@ -108,6 +108,7 @@
       <SDLCheck>false</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -116,6 +117,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="objLoader.cpp" />
@@ -148,6 +152,7 @@
     <Image Include="carver.dds">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="Displacement.dds" />
     <Image Include="earth-medium.dds" />
     <Image Include="earth.dds">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>

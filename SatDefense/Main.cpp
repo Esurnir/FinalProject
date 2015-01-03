@@ -21,7 +21,7 @@ nightImageLocation,
 specImageLocation,
 triangleCount,
 mvpMatrixUniformLocation,
-eartTextureID[3] = { 0 },
+eartTextureID[4] = { 0 },
 BufferIds[3] = { 0 },
 ShaderIds[3] = { 0 };
 
@@ -267,7 +267,7 @@ void CreateMesh(const char* filename)
 
 
 	//glEnable(GL_TEXTURE_2D);
-	glGenTextures(3, eartTextureID);
+	glGenTextures(4, eartTextureID);
 
 	ExitOnGLError("ERROR: Could not gen texture");
 
@@ -412,6 +412,53 @@ void CreateMesh(const char* filename)
 		}
 	}
 
+	Texture = gli::texture2D(gli::load_dds("displacement.dds"));
+
+	if (Texture.empty())  {
+		printf("Error loading spec.dds\n");
+		exit(EXIT_FAILURE);
+	}
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[3]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+	if (GLEW_EXT_texture_filter_anisotropic) glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 0);
+	glTexStorage2D(GL_TEXTURE_2D,
+		GLint(Texture.levels()),
+		GLenum(gli::internal_format(Texture.format())),
+		GLsizei(Texture.dimensions().x),
+		GLsizei(Texture.dimensions().y));
+	if (gli::is_compressed(Texture.format()))
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glCompressedTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::internal_format(Texture.format())),
+				GLsizei(Texture[Level].size()),
+				Texture[Level].data());
+		}
+	}
+	else
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::external_format(Texture.format())),
+				GLenum(gli::type_format(Texture.format())),
+				Texture[Level].data());
+		}
+	}
 }
 
 void DestroyCube()
