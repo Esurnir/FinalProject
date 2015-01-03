@@ -18,6 +18,7 @@ lDirUniformLocation,
 NormalMatrixLocation,
 texImageLocation,
 nightImageLocation,
+specImageLocation,
 triangleCount,
 mvpMatrixUniformLocation,
 eartTextureID[3] = { 0 },
@@ -193,6 +194,7 @@ void CreateMesh(const char* filename)
 	lDirUniformLocation = glGetUniformLocation(ShaderIds[0], "lDir");
 	texImageLocation = glGetUniformLocation(ShaderIds[0], "texImage");
 	nightImageLocation = glGetUniformLocation(ShaderIds[0], "nightImage");
+	specImageLocation = glGetUniformLocation(ShaderIds[0], "specImage");
 	mvpMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvpMatrix");
 	mvMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvMatrix");
 	
@@ -268,8 +270,11 @@ void CreateMesh(const char* filename)
 	glGenTextures(3, eartTextureID);
 
 	ExitOnGLError("ERROR: Could not gen texture");
+
+	float aniso = 0.0f;
+	if (GLEW_EXT_texture_filter_anisotropic) glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
 	
-	gli::texture2D Texture(gli::load_dds("earth.dds"));
+	gli::texture2D Texture(gli::load_dds("earth-medium.dds"));
 	if (Texture.empty())  {
 		printf("Error loading earth.dds\n");
 		exit(EXIT_FAILURE);
@@ -277,6 +282,9 @@ void CreateMesh(const char* filename)
 	glBindTexture(GL_TEXTURE_2D, eartTextureID[0]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if (GLEW_EXT_texture_filter_anisotropic) glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
 	glTexStorage2D(GL_TEXTURE_2D,
 		GLint(Texture.levels()),
 		GLenum(gli::internal_format(Texture.format())),
@@ -321,6 +329,55 @@ void CreateMesh(const char* filename)
 	glBindTexture(GL_TEXTURE_2D, eartTextureID[1]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if (GLEW_EXT_texture_filter_anisotropic) glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+	glTexStorage2D(GL_TEXTURE_2D,
+		GLint(Texture.levels()),
+		GLenum(gli::internal_format(Texture.format())),
+		GLsizei(Texture.dimensions().x),
+		GLsizei(Texture.dimensions().y));
+	if (gli::is_compressed(Texture.format()))
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glCompressedTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::internal_format(Texture.format())),
+				GLsizei(Texture[Level].size()),
+				Texture[Level].data());
+		}
+	}
+	else
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::external_format(Texture.format())),
+				GLenum(gli::type_format(Texture.format())),
+				Texture[Level].data());
+		}
+	}
+
+	Texture = gli::texture2D(gli::load_dds("spec.dds"));
+
+	if (Texture.empty())  {
+		printf("Error loading spec.dds\n");
+		exit(EXIT_FAILURE);
+	}
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[2]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if (GLEW_EXT_texture_filter_anisotropic) glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
 	glTexStorage2D(GL_TEXTURE_2D,
 		GLint(Texture.levels()),
 		GLenum(gli::internal_format(Texture.format())),
@@ -385,14 +442,15 @@ void DrawCube(void)
 	CubeRotation += 45.0f * ((float)(Now - LastTime) / CLOCKS_PER_SEC);
 	CubeAngle = DegreesToRadians(CubeRotation);
 	LastTime = Now;
-	glm::mat4 modMatrix = glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f));
-	modMatrix = glm::rotate(modMatrix, CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 modMatrix = glm::rotate(glm::mat4(), CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
 	//viewMatrix = glm::rotate(viewMatrix, (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f));
 	glm::mat4 projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 100.0f);
 	glm::mat4 mvp = projMatrix*viewMatrix*modMatrix;
 	glm::mat4 mv = viewMatrix*modMatrix;
-
+	glm::vec4 lightDir(1.0f, 0.0f, 0.0f,0.0f);
+	lightDir = glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), CubeAngle/2, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
+	glm::vec3 lDir(lightDir);
 	
 	glm::mat3 normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix*modMatrix));// TransposeInverse3x3ModelView(&ModelMatrix, &ViewMatrix);
 
@@ -403,9 +461,11 @@ void DrawCube(void)
 	glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &normalMatrix[0][0]);
 	glUniformMatrix4fv(mvpMatrixUniformLocation, 1, GL_FALSE, &mvp[0][0]);
 	glUniformMatrix4fv(mvMatrixUniformLocation, 1, GL_FALSE, &mv[0][0]);
-	glUniform3f(lDirUniformLocation, 1, 0, 0 );
+
+	glUniform3fv(lDirUniformLocation, 1, &lDir[0]);
 	glUniform1i(texImageLocation, 0);
 	glUniform1i(nightImageLocation, 1);
+	glUniform1i(specImageLocation, 2);
 	ExitOnGLError("ERROR: Could not set the shader uniforms");
 
 	glActiveTexture(GL_TEXTURE0);
@@ -413,6 +473,9 @@ void DrawCube(void)
 	
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, eartTextureID[1]);
+	
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[2]);
 
 	glBindVertexArray(BufferIds[0]);
 	ExitOnGLError("ERROR: Could not bind the VAO for drawing purposes");

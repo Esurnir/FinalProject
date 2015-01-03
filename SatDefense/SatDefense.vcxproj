@@ -107,6 +107,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -147,9 +148,11 @@
     <Image Include="carver.dds">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="earth-medium.dds" />
     <Image Include="earth.dds">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
     </Image>
+    <Image Include="spec.dds" />
     <Image Include="test.dds" />
   </ItemGroup>
   <ItemGroup>

@@ -2,13 +2,15 @@
 
 in vec3 ex_Normal;
 in vec2 ex_texCoord;
-in vec4 ex_eye;
+in vec3 ex_eye;
 in vec3 debugNormal;
+in float fresnelFactor;
 out vec4 out_Color;
 
 uniform vec3 lDir;
 uniform sampler2D texImage;
 uniform sampler2D nightImage;
+uniform sampler2D specImage;
 struct material
 {
 	vec4 ambient;
@@ -20,9 +22,10 @@ material mymaterial = material(
 	vec4(0.2, 0.2, 0.2, 1.0),
 	vec4(1.0, 1.0, 1.0, 1.0),
 	vec4(1.0, 1.0, 1.0, 1.0),
-	50.0
+	25.0
 	);
- 
+vec4 fresnelColour = vec4(0.7, 0.7, 1.0, 1.0);
+
 void main(void)
 {
 	// set the specular term to black
@@ -36,23 +39,28 @@ void main(void)
 
 	float intensity = max(dot(n, light), 0.0);
 	
+	
 	// if the vertex is lit compute the specular color
-	if (intensity > 0.0) {
+	//if (intensity > 0.0) {
 		// compute the half vector
 		vec3 h = normalize(light + e);
 		// compute the specular term into spec
 		float intSpec = max(dot(h, n), 0.0);
-		spec = mymaterial.specular * pow(intSpec, mymaterial.shininess);
-	}
+		spec = mymaterial.specular * pow(intSpec, mymaterial.shininess) * clamp(texture(specImage,ex_texCoord),0.25,1);
+	//}
 
 	if (intensity < 0.2) {
 		float fudgeFactor = 1-max(intensity*5,0);
-		nightColor = fudgeFactor * texture(nightImage,ex_texCoord);
+		nightColor = fudgeFactor * 3*texture(nightImage,ex_texCoord);
 	}
 	vec4 texColor = texture(texImage, vec2(ex_texCoord.s, ex_texCoord.t));
 	vec4 diffColor = intensity * mymaterial.diffuse * texColor;
 	
 
-	out_Color = max(diffColor + spec + nightColor, nightColor);
-
+	out_Color = max(diffColor + spec + nightColor, nightColor);// nightColor);
+	//out_Color = vec4(spec);
+	//out_Color = vec4(fresnelFactor);
+	out_Color = mix(out_Color, fresnelColour, fresnelFactor*intensity);
+	//out_Color = vec4(1)*fresnelFactor*intensity;
+	
 }
