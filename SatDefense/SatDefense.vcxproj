@@ -152,6 +152,7 @@
     <Image Include="earth.dds">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
     </Image>
+    <Image Include="night.dds" />
     <Image Include="spec.dds" />
     <Image Include="test.dds" />
   </ItemGroup>

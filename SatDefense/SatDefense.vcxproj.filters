@@ -53,6 +53,7 @@
     <Image Include="carver.dds" />
     <Image Include="earth-medium.dds" />
     <Image Include="spec.dds" />
+    <Image Include="night.dds" />
   </ItemGroup>
   <ItemGroup>
     <None Include="freeglut.dll" />
