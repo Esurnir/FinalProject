@@ -8,6 +8,7 @@ out vec4 out_Color;
 
 uniform vec3 lDir;
 uniform sampler2D texImage;
+uniform sampler2D nightImage;
 struct material
 {
 	vec4 ambient;
@@ -26,6 +27,7 @@ void main(void)
 {
 	// set the specular term to black
 	vec4 spec = vec4(0.0);
+	vec4 nightColor = vec4(0.0);
 
 	// normalize both input vectors
 	vec3 n = normalize(ex_Normal);
@@ -42,10 +44,15 @@ void main(void)
 		float intSpec = max(dot(h, n), 0.0);
 		spec = mymaterial.specular * pow(intSpec, mymaterial.shininess);
 	}
+
+	if (intensity < 0.2) {
+		float fudgeFactor = 1-max(intensity*5,0);
+		nightColor = fudgeFactor * texture(nightImage,ex_texCoord);
+	}
 	vec4 texColor = texture(texImage, vec2(ex_texCoord.s, ex_texCoord.t));
 	vec4 diffColor = intensity * mymaterial.diffuse * texColor;
-	vec4 ambColor = mymaterial.ambient * texColor;
+	
 
-	out_Color = max(diffColor + spec, ambColor);
+	out_Color = max(diffColor + spec + nightColor, nightColor);
 
 }

@@ -3,7 +3,7 @@
 #include <gli/gli.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define WINDOW_TITLE_PREFIX "Chapter 4"
+#define WINDOW_TITLE_PREFIX "Sattelite Defense"
 
 int
 CurrentWidth = 800,
@@ -17,16 +17,13 @@ mvMatrixUniformLocation,
 lDirUniformLocation,
 NormalMatrixLocation,
 texImageLocation,
+nightImageLocation,
 triangleCount,
 mvpMatrixUniformLocation,
-eartTextureID,
+eartTextureID[3] = { 0 },
 BufferIds[3] = { 0 },
 ShaderIds[3] = { 0 };
 
-Matrix
-ProjectionMatrix,
-ViewMatrix,
-ModelMatrix;
 
 float CubeRotation = 0;
 clock_t LastTime = 0;
@@ -87,10 +84,6 @@ void Initialize(int argc, char* argv[])
 	glFrontFace(GL_CCW);
 	ExitOnGLError("ERROR: Could not set OpenGL culling options");
 
-	ModelMatrix = IDENTITY_MATRIX;
-	ProjectionMatrix = IDENTITY_MATRIX;
-	ViewMatrix = IDENTITY_MATRIX;
-	TranslateMatrix(&ViewMatrix, 0, 0, -2);
 
 	CreateMesh("earth.obj");
 }
@@ -199,6 +192,7 @@ void CreateMesh(const char* filename)
 	NormalMatrixLocation = glGetUniformLocation(ShaderIds[0], "NormalInvMatrix");
 	lDirUniformLocation = glGetUniformLocation(ShaderIds[0], "lDir");
 	texImageLocation = glGetUniformLocation(ShaderIds[0], "texImage");
+	nightImageLocation = glGetUniformLocation(ShaderIds[0], "nightImage");
 	mvpMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvpMatrix");
 	mvMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvMatrix");
 	
@@ -271,13 +265,16 @@ void CreateMesh(const char* filename)
 
 
 	//glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, &eartTextureID);
+	glGenTextures(3, eartTextureID);
 
 	ExitOnGLError("ERROR: Could not gen texture");
 	
 	gli::texture2D Texture(gli::load_dds("earth.dds"));
-	assert(!Texture.empty());
-	glBindTexture(GL_TEXTURE_2D, eartTextureID);
+	if (Texture.empty())  {
+		printf("Error loading earth.dds\n");
+		exit(EXIT_FAILURE);
+	}
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[0]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
 	glTexStorage2D(GL_TEXTURE_2D,
@@ -315,6 +312,49 @@ void CreateMesh(const char* filename)
 	}
 
 
+	Texture = gli::texture2D(gli::load_dds("night.dds"));
+
+	if (Texture.empty())  {
+		printf("Error loading night.dds\n");
+		exit(EXIT_FAILURE);
+	}
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[1]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
+	glTexStorage2D(GL_TEXTURE_2D,
+		GLint(Texture.levels()),
+		GLenum(gli::internal_format(Texture.format())),
+		GLsizei(Texture.dimensions().x),
+		GLsizei(Texture.dimensions().y));
+	if (gli::is_compressed(Texture.format()))
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glCompressedTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::internal_format(Texture.format())),
+				GLsizei(Texture[Level].size()),
+				Texture[Level].data());
+		}
+	}
+	else
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::external_format(Texture.format())),
+				GLenum(gli::type_format(Texture.format())),
+				Texture[Level].data());
+		}
+	}
+
 }
 
 void DestroyCube()
@@ -329,6 +369,9 @@ void DestroyCube()
 	glDeleteBuffers(2, &BufferIds[1]);
 	glDeleteVertexArrays(1, &BufferIds[0]);
 	ExitOnGLError("ERROR: Could not destroy the buffer objects");
+
+	glDeleteTextures(3, eartTextureID);
+	ExitOnGLError("ERROR: Could not destroy the texture objects");
 }
 
 void DrawCube(void)
@@ -342,9 +385,10 @@ void DrawCube(void)
 	CubeRotation += 45.0f * ((float)(Now - LastTime) / CLOCKS_PER_SEC);
 	CubeAngle = DegreesToRadians(CubeRotation);
 	LastTime = Now;
-	glm::mat4 modMatrix = glm::rotate(glm::mat4(),CubeAngle,glm::vec3(1.0f,0.0f,0.0f));
+	glm::mat4 modMatrix = glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f));
 	modMatrix = glm::rotate(modMatrix, CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
+	//viewMatrix = glm::rotate(viewMatrix, (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f));
 	glm::mat4 projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 100.0f);
 	glm::mat4 mvp = projMatrix*viewMatrix*modMatrix;
 	glm::mat4 mv = viewMatrix*modMatrix;
@@ -361,10 +405,14 @@ void DrawCube(void)
 	glUniformMatrix4fv(mvMatrixUniformLocation, 1, GL_FALSE, &mv[0][0]);
 	glUniform3f(lDirUniformLocation, 1, 0, 0 );
 	glUniform1i(texImageLocation, 0);
+	glUniform1i(nightImageLocation, 1);
 	ExitOnGLError("ERROR: Could not set the shader uniforms");
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, eartTextureID);
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[0]);
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[1]);
 
 	glBindVertexArray(BufferIds[0]);
 	ExitOnGLError("ERROR: Could not bind the VAO for drawing purposes");
