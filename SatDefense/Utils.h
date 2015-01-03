@@ -15,13 +15,13 @@
 static const double PI = 3.14159265358979323846;
 
 
-typedef struct Vertex {
+struct Vertex {
 	glm::vec3 position;
 	glm::vec3 normal;
 	glm::vec2 texCoord;
 };
 
-typedef struct MeshVBO {
+struct MeshVBO {
 	std::vector<Vertex> vertexBuffer;
 	std::vector<unsigned int> indexBuffer;
 };
