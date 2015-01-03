@@ -44,15 +44,13 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="earth.dds">
-      <Filter>Source Files</Filter>
-    </Image>
     <Image Include="test.dds">
       <Filter>Source Files</Filter>
     </Image>
     <Image Include="carver.dds" />
     <Image Include="earth-medium.dds" />
     <Image Include="spec.dds" />
+    <Image Include="earth.dds" />
   </ItemGroup>
   <ItemGroup>
     <None Include="freeglut.dll" />
