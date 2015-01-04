@@ -4,7 +4,6 @@ in vec3 ex_Normal;
 in vec2 ex_texCoord;
 in vec3 ex_eye;
 in vec3 debugNormal;
-in float fresnelFactor;
 out vec4 out_Color;
 
 uniform vec3 lDir;
@@ -22,9 +21,9 @@ material mymaterial = material(
 	vec4(0.2, 0.2, 0.2, 1.0),
 	vec4(1.0, 1.0, 1.0, 1.0),
 	vec4(1.0, 1.0, 1.0, 1.0),
-	25.0
+	30.0
 	);
-vec4 fresnelColour = vec4(0.7, 0.7, 1.0, 1.0);
+vec4 fresnelColour = vec4(0.3, 0.3, 1.0, 1.0);
 
 void main(void)
 {
@@ -38,6 +37,11 @@ void main(void)
 	vec3 light = normalize(lDir);
 
 	float intensity = max(dot(n, light), 0.0);
+	float Bias = 0.0;
+	float Scale = 3;
+	float Pow = 2;
+	float fresnelFactor = Bias + Scale * pow(1.0 + dot(-e, n), Pow);
+	fresnelFactor = clamp(fresnelFactor, 0, 1);
 	
 	
 	// if the vertex is lit compute the specular color
@@ -46,7 +50,8 @@ void main(void)
 		vec3 h = normalize(light + e);
 		// compute the specular term into spec
 		float intSpec = max(dot(h, n), 0.0);
-		spec = mymaterial.specular * pow(intSpec, mymaterial.shininess) * clamp(texture(specImage,ex_texCoord),0.25,1);
+		float specfactor = pow(intSpec, mymaterial.shininess) * clamp(texture(specImage, ex_texCoord), 0.25, 1).r;
+		spec = mymaterial.specular * specfactor;
 	//}
 
 	if (intensity < 0.2) {
@@ -61,6 +66,6 @@ void main(void)
 	//out_Color = vec4(spec);
 	//out_Color = vec4(fresnelFactor);
 	out_Color = mix(out_Color, fresnelColour, fresnelFactor*intensity);
-	//out_Color = vec4(1)*fresnelFactor*intensity;
-	
+	out_Color.a = fresnelFactor*intensity+specfactor;
+	//out_Color = vec4(out_Color.a);
 }

@@ -8,8 +8,8 @@
 #define WINDOW_TITLE_PREFIX "Sattelite Defense"
 
 int
-CurrentWidth = 1024,
-CurrentHeight = 1024,
+CurrentWidth = 800,
+CurrentHeight = 600,
 WindowHandle = 0;
 
 unsigned FrameCount = 0;
