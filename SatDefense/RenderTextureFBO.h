@@ -100,8 +100,8 @@ public:
             glGenRenderbuffersEXT(1, &m_rb_depth);
             glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, m_rb_depth);
 			if (m_samples > 0) {
-                if ((m_coverageSamples > 0) && glRenderbufferStorageMultisampleCoverageNV) {
-                    glRenderbufferStorageMultisampleCoverageNV(GL_RENDERBUFFER_EXT, m_coverageSamples, m_samples, iformat, m_width, m_height);
+				if ((m_coverageSamples > 0) && GLEW_NV_framebuffer_multisample_coverage) {
+					glRenderbufferStorageMultisampleCoverageNV(GL_RENDERBUFFER_EXT, m_coverageSamples, m_samples, iformat, m_width, m_height);
                 } else {
 				    glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, m_samples, iformat, m_width, m_height);
                 }

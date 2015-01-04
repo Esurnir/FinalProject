@@ -28,7 +28,7 @@ eartTextureID[4] = { 0 }, //0 = diffuse 1 = night 2 = specular 3 = displacement
 BufferIds[3] = { 0 }, //0 = VAO 1 = VBO 2 = VEB
 quadIds[6] = { 0 },
 ShaderIds[3] = { 0 }; 
-bool aamode = 0;
+bool aamode = 1;
 
 #define DOWNSAMPLE_BUFFERS 2
 #define BLUR_BUFFERS 2
@@ -175,19 +175,22 @@ void RenderFunction(void)
 	
 	if (aamode) {
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, scene_buffer->GetFramebuffer());
-		glBlitFramebuffer(0, 0, CurrentHeight - 1, CurrentHeight - 1, 0, 0, CurrentWidth - 1, CurrentHeight - 1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-	}
-	scene_buffer->Activate();
+		glBlitFramebuffer(0, 0, CurrentWidth, CurrentHeight, 0, 0, CurrentWidth, CurrentHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	}/*
+	scene_buffer->Bind();
 	ExitOnGLError("Could not bind Read buffer");
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glDrawBuffer(GL_BACK);
 	ExitOnGLError("Could not bind back buffer");
-	glBlitFramebuffer(0, 0, CurrentHeight-1, CurrentHeight-1 , 0, 0, CurrentWidth -1, CurrentHeight-1 , GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	glBlitFramebuffer(0, 0, CurrentWidth, CurrentHeight , 0, 0, CurrentWidth, CurrentHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	
-	ExitOnGLError("Could not blit the to screen");
-	/*glActiveTexture(GL_TEXTURE0);
+	ExitOnGLError("Could not blit the to screen");*/
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glActiveTexture(GL_TEXTURE0);
+	ExitOnGLError("Could not bind Read buffer");
 	scene_buffer->Bind();
-	drawQuad();*/
+	glClear(GL_COLOR_BUFFER_BIT);
+	drawQuad();
 
 	glutSwapBuffers();
 }
@@ -516,6 +519,7 @@ void DestroyCube()
 
 void DrawCube(void)
 {
+	glEnable(GL_DEPTH_TEST);
 	float CubeAngle;
 	clock_t Now = clock();
 
@@ -571,12 +575,13 @@ void DrawCube(void)
 
 	glBindVertexArray(0);
 	glUseProgram(0);
+	glDisable(GL_DEPTH_TEST);
 }
 
 
 void initFBOs() {
-	if (GLEW_EXT_framebuffer_blit) {
-		ms_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D, 4, 16);
+	if (GLEW_EXT_framebuffer_blit && aamode) {
+		ms_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D, 4, 0);
 		ms_buffer->InitColor_RB(0, GL_RGBA16F_ARB);
 		ms_buffer->InitDepth_RB();
 	}
@@ -668,6 +673,17 @@ void initQuad() {
 	ExitOnGLError("ERROR: Could not link the shader program");
 	GLint ret;
 	CheckShader(quadIds[3], GL_LINK_STATUS, &ret, "unable to link the program!");
+	if (GLEW_ARB_get_program_binary) {
+		const size_t MAX_SIZE = 1 << 24;
+		char*  binary = new char[MAX_SIZE];
+		GLenum format;
+		GLint flength;
+		glGetProgramBinary(ShaderIds[0], MAX_SIZE, &flength, &format, binary);
+		std::ofstream binaryfile("passthrough.txt");
+		binaryfile.write(binary, flength);
+		delete[] binary;
+
+	}
 	/*GLchar progStatus[500];
 	GLsizei length;
 	glGetProgramInfoLog(quadIds[3], 500, &length, progStatus);
@@ -691,6 +707,7 @@ void deleteQuad() {
 }
 
 void drawQuad() {
+	glDisable(GL_DEPTH_TEST);
 	glUseProgram(quadIds[3]);
 	glBindVertexArray(quadIds[0]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
