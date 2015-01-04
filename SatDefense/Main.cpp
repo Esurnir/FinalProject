@@ -8,8 +8,8 @@
 #define WINDOW_TITLE_PREFIX "Sattelite Defense"
 
 int
-CurrentWidth = 800,
-CurrentHeight = 600,
+CurrentWidth = 1024,
+CurrentHeight = 1024,
 WindowHandle = 0;
 
 unsigned FrameCount = 0;
@@ -102,7 +102,6 @@ void Initialize(int argc, char* argv[])
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 	ExitOnGLError("ERROR: Could not set OpenGL culling options");
-	destroyFBOs();
 	initFBOs();
 
 	CreateMesh("earth.obj");
@@ -149,7 +148,6 @@ void ResizeFunction(int Width, int Height)
 	CurrentWidth = Width;
 	CurrentHeight = Height;
 	glViewport(0, 0, CurrentWidth, CurrentHeight);
-	destroyFBOs();
 	initFBOs();
 }
 
@@ -172,10 +170,20 @@ void RenderFunction(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	DrawCube();
+	ExitOnGLError("ERROR: Problem after exiting cube");
 	
 	if (aamode) {
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, scene_buffer->GetFramebuffer());
+		GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+		if (status != GL_FRAMEBUFFER_COMPLETE)
+		{
+			std::cout << "The frame buffer status is not complete!" << std::endl;
+			exit(1);
+		}
+
+		ExitOnGLError("Could not bind draw buffer");
 		glBlitFramebuffer(0, 0, CurrentWidth, CurrentHeight, 0, 0, CurrentWidth, CurrentHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		ExitOnGLError("Could not blit buffer");
 	}/*
 	scene_buffer->Bind();
 	ExitOnGLError("Could not bind Read buffer");
@@ -629,6 +637,7 @@ void destroyFBOs() {
 }
 
 void initQuad() {
+	destroyFBOs();
 	GLfloat quad[] = { -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0 }; //normalized trianglestrip
 	GLfloat uv[] = { 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0 }; //matching uv coordinate
 

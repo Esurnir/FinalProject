@@ -23,7 +23,7 @@ public:
             m_rb_col[i] = 0;
             m_tex_col[i] = 0;
         }
-        glGenFramebuffersEXT(1, &m_fb);
+        glGenFramebuffers(1, &m_fb);
     }
 
     ~RenderTexture()
@@ -31,37 +31,37 @@ public:
         int i;
         for(i = 0; i < num_col_buffers; i++) {
             if (m_tex_col[i]) { glDeleteTextures(1, &m_tex_col[i]); }
-            if (m_rb_col[i]) { glDeleteRenderbuffersEXT(1, &m_rb_col[i]); }
+            if (m_rb_col[i]) { glDeleteRenderbuffers(1, &m_rb_col[i]); }
         }
         if(m_tex_depth) { glDeleteTextures(1, &m_tex_depth); }
-		if(m_rb_depth) { glDeleteRenderbuffersEXT(1, &m_rb_depth); }
+		if(m_rb_depth) { glDeleteRenderbuffers(1, &m_rb_depth); }
 
-		glDeleteFramebuffersEXT(1, &m_fb);
+		glDeleteFramebuffers(1, &m_fb);
 	}
 
     // In order to use a color buffer, either
     // InitColor_RB or InitColor_Tex needs to be called.
     void InitColor_RB(int index = 0, GLenum iformat = GL_FLOAT_RGBA16_NV)
     {
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb); 
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb); 
         {
-            glGenRenderbuffersEXT(1, &m_rb_col[index]);
-            glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, m_rb_col[index]);
+            glGenRenderbuffers(1, &m_rb_col[index]);
+            glBindRenderbuffer(GL_RENDERBUFFER, m_rb_col[index]);
 			if (m_samples > 0) {
 				if ((m_coverageSamples > 0) && GLEW_NV_framebuffer_multisample_coverage) {
                     glRenderbufferStorageMultisampleCoverageNV(
-                        GL_RENDERBUFFER_EXT, m_coverageSamples, m_samples, iformat, m_width, m_height);
+                        GL_RENDERBUFFER, m_coverageSamples, m_samples, iformat, m_width, m_height);
                 } else {
-			        glRenderbufferStorageMultisampleEXT(
-                        GL_RENDERBUFFER_EXT, m_samples, iformat, m_width, m_height);
+			        glRenderbufferStorageMultisample(
+                        GL_RENDERBUFFER, m_samples, iformat, m_width, m_height);
                 }
 			} else {
-				glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, iformat, m_width, m_height);
+				glRenderbufferStorage(GL_RENDERBUFFER, iformat, m_width, m_height);
 			}
-            glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
-                    GL_COLOR_ATTACHMENT0_EXT + index, GL_RENDERBUFFER_EXT, m_rb_col[index]);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                    GL_COLOR_ATTACHMENT0 + index, GL_RENDERBUFFER, m_rb_col[index]);
         }
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb); 
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb); 
     }
 
     void InitColor_Tex(int index = 0, GLenum iformat = GL_FLOAT_RGBA16_NV)
@@ -75,43 +75,43 @@ public:
         glTexImage2D(m_target, 0, iformat, m_width, m_height, 0,
                 GL_RGBA, GL_INT, NULL);
 
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb);
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
-                GL_COLOR_ATTACHMENT0_EXT + index, m_target, m_tex_col[index], 0);
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb);
+        glFramebufferTexture2D(GL_FRAMEBUFFER,
+                GL_COLOR_ATTACHMENT0 + index, m_target, m_tex_col[index], 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     void InitColor_None()
     {
         // turn the color buffer off in case this is a z only fbo
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb); 
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb); 
         {
             glDrawBuffer(GL_NONE);
             glReadBuffer(GL_NONE);
         }
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); 
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); 
     }
 
     // In order to use a depth buffer, either
     // InitDepth_RB or InitDepth_Tex needs to be called.
     void InitDepth_RB(GLenum iformat = GL_DEPTH_COMPONENT24)
     {
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb); 
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb); 
         {
-            glGenRenderbuffersEXT(1, &m_rb_depth);
-            glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, m_rb_depth);
+            glGenRenderbuffers(1, &m_rb_depth);
+            glBindRenderbuffer(GL_RENDERBUFFER, m_rb_depth);
 			if (m_samples > 0) {
 				if ((m_coverageSamples > 0) && GLEW_NV_framebuffer_multisample_coverage) {
-					glRenderbufferStorageMultisampleCoverageNV(GL_RENDERBUFFER_EXT, m_coverageSamples, m_samples, iformat, m_width, m_height);
+					glRenderbufferStorageMultisampleCoverageNV(GL_RENDERBUFFER, m_coverageSamples, m_samples, iformat, m_width, m_height);
                 } else {
-				    glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, m_samples, iformat, m_width, m_height);
+				    glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_samples, iformat, m_width, m_height);
                 }
 			} else {
-				glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, iformat, m_width, m_height);
+				glRenderbufferStorage(GL_RENDERBUFFER, iformat, m_width, m_height);
 			}
-            glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
-                    GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, m_rb_depth);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER,
+                    GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_rb_depth);
         }
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb); 
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb); 
     }
 
     void InitDepth_Tex(GLenum iformat = GL_DEPTH_COMPONENT24)
@@ -125,10 +125,10 @@ public:
         glTexImage2D(m_target, 0, iformat, m_width, m_height, 0,
                 GL_DEPTH_COMPONENT, GL_INT, NULL);
 
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb);
-        glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
-                GL_DEPTH_ATTACHMENT_EXT, m_target, m_tex_depth, 0);
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb);
+        glFramebufferTexture2D(GL_FRAMEBUFFER,
+                GL_DEPTH_ATTACHMENT, m_target, m_tex_depth, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
 
@@ -136,14 +136,14 @@ public:
     // The FBO needs to be deactivated when using the associated textures.
 	void Activate()
     {
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, m_fb); 
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fb); 
 #if _DEBUG
 		CheckFramebufferStatus();
 #endif
 	}
 	void Deactivate() 
     {
-        glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     // Bind the internal textures
@@ -171,29 +171,29 @@ private:
     void CheckFramebufferStatus()
     {
         GLenum status;
-        status = (GLenum) glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+        status = (GLenum) glCheckFramebufferStatus(GL_FRAMEBUFFER);
         switch(status) {
-            case GL_FRAMEBUFFER_COMPLETE_EXT:
+            case GL_FRAMEBUFFER_COMPLETE:
                 break;
-            case GL_FRAMEBUFFER_UNSUPPORTED_EXT:
+            case GL_FRAMEBUFFER_UNSUPPORTED:
                 printf("Unsupported framebuffer format\n");
                 break;
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
                 printf("Framebuffer incomplete attachment\n");
                 break;
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
                 printf("Framebuffer incomplete, missing attachment\n");
                 break;
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+            /*case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
                 printf("Framebuffer incomplete, attached images must have same dimensions\n");
                 break;
-            case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+            case GL_FRAMEBUFFER_INCOMPLETE_FORMATS:
                 printf("Framebuffer incomplete, attached images must have same format\n");
-                break;
-            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+                break;*/
+            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
                 printf("Framebuffer incomplete, missing draw buffer\n");
                 break;
-            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
                 printf("Framebuffer incomplete, missing read buffer\n");
                 break;
             default:
