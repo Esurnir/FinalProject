@@ -128,6 +128,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="objLoader.h" />
+    <ClInclude Include="RenderTextureFBO.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -168,6 +169,8 @@
     <None Include="glew32.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="passthrough.frag.glsl" />
+    <None Include="passthrough.vert.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="carver.obj">

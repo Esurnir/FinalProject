@@ -2,6 +2,8 @@
 #include "objLoader.h"
 #include <gli/gli.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "RenderTextureFBO.h"
+#include <iostream>
 
 #define WINDOW_TITLE_PREFIX "Sattelite Defense"
 
@@ -21,9 +23,18 @@ nightImageLocation,
 specImageLocation,
 triangleCount,
 mvpMatrixUniformLocation,
-eartTextureID[4] = { 0 },
-BufferIds[3] = { 0 },
-ShaderIds[3] = { 0 };
+ptSamplerUniformLocation,
+eartTextureID[4] = { 0 }, //0 = diffuse 1 = night 2 = specular 3 = displacement
+BufferIds[3] = { 0 }, //0 = VAO 1 = VBO 2 = VEB
+quadIds[6] = { 0 },
+ShaderIds[3] = { 0 }; 
+bool aamode = 0;
+
+#define DOWNSAMPLE_BUFFERS 2
+#define BLUR_BUFFERS 2
+RenderTexture *scene_buffer = 0, *downsample_buffer[DOWNSAMPLE_BUFFERS];
+RenderTexture *blur_buffer[BLUR_BUFFERS];
+RenderTexture *ms_buffer = 0;
 
 
 float CubeRotation = 0;
@@ -39,6 +50,13 @@ void CreateCube(void);
 void DestroyCube(void);
 void DrawCube(void);
 void CreateMesh(const char* filename);
+void initQuad();
+void drawQuad();
+void destroyQuad();
+void destroyFBOs();
+void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail);
+
+void initFBOs();
 
 int main(int argc, char* argv[])
 {
@@ -84,9 +102,11 @@ void Initialize(int argc, char* argv[])
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 	ExitOnGLError("ERROR: Could not set OpenGL culling options");
-
+	destroyFBOs();
+	initFBOs();
 
 	CreateMesh("earth.obj");
+	initQuad();
 }
 
 void InitWindow(int argc, char* argv[])
@@ -104,7 +124,7 @@ void InitWindow(int argc, char* argv[])
 
 	glutInitWindowSize(CurrentWidth, CurrentHeight);
 
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE );
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA );
 
 	WindowHandle = glutCreateWindow(WINDOW_TITLE_PREFIX);
 
@@ -121,7 +141,7 @@ void InitWindow(int argc, char* argv[])
 	glutIdleFunc(IdleFunction);
 	glutTimerFunc(0, TimerFunction, 0);
 	glutCloseFunc(DestroyCube);
-	glEnable(GL_MULTISAMPLE_ARB);
+	//glEnable(GL_MULTISAMPLE_ARB);
 }
 
 void ResizeFunction(int Width, int Height)
@@ -129,15 +149,45 @@ void ResizeFunction(int Width, int Height)
 	CurrentWidth = Width;
 	CurrentHeight = Height;
 	glViewport(0, 0, CurrentWidth, CurrentHeight);
+	destroyFBOs();
+	initFBOs();
 }
 
 void RenderFunction(void)
 {
 	++FrameCount;
+	
+	if (aamode) {
+		ms_buffer->Activate();
+		ExitOnGLError("Could not bind framebuffer");
+		glEnable(GL_MULTISAMPLE);
+	}
+	else {
+		scene_buffer->Activate();
+		ExitOnGLError("Could not bind framebuffer");
+		glDisable(GL_MULTISAMPLE);
+	}
+	
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	DrawCube();
+	
+	if (aamode) {
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, scene_buffer->GetFramebuffer());
+		glBlitFramebuffer(0, 0, CurrentHeight - 1, CurrentHeight - 1, 0, 0, CurrentWidth - 1, CurrentHeight - 1, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	}
+	scene_buffer->Activate();
+	ExitOnGLError("Could not bind Read buffer");
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
+	ExitOnGLError("Could not bind back buffer");
+	glBlitFramebuffer(0, 0, CurrentHeight-1, CurrentHeight-1 , 0, 0, CurrentWidth -1, CurrentHeight-1 , GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	
+	ExitOnGLError("Could not blit the to screen");
+	/*glActiveTexture(GL_TEXTURE0);
+	scene_buffer->Bind();
+	drawQuad();*/
 
 	glutSwapBuffers();
 }
@@ -181,13 +231,14 @@ void CreateMesh(const char* filename)
 		ShaderIds[2] = LoadShader("EarthShader.vertex.glsl", GL_VERTEX_SHADER);
 		glAttachShader(ShaderIds[0], ShaderIds[1]);
 		glAttachShader(ShaderIds[0], ShaderIds[2]);
+		GLint ret;
+		CheckShader(ShaderIds[2], GL_COMPILE_STATUS, &ret, "unable to compile the vertex shader!");
+		CheckShader(ShaderIds[1], GL_COMPILE_STATUS, &ret, "unable to compile the fragment shader!");
 	}
 	glLinkProgram(ShaderIds[0]);
 	ExitOnGLError("ERROR: Could not link the shader program");
-	GLchar progStatus[500];
-	GLsizei length;
-	glGetProgramInfoLog(ShaderIds[0], 500, &length, progStatus);
-	fprintf(stderr, "%s\n", progStatus);
+	GLint ret;
+	CheckShader(ShaderIds[0], GL_LINK_STATUS, &ret, "unable to link the program!");
 
 
 	NormalMatrixLocation = glGetUniformLocation(ShaderIds[0], "NormalInvMatrix");
@@ -241,23 +292,7 @@ void CreateMesh(const char* filename)
 
 	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &nbuffersize);
 	printf("%d ", nbuffersize);
-/*
-	vert = theMesh.Normals;
-	glBindBuffer(GL_ARRAY_BUFFER, BufferIds[2]);
-	glBufferData(GL_ARRAY_BUFFER, theMesh.Normals.size()*sizeof(Vec3), &vert[0], GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	ExitOnGLError("ERROR: Could not bind the Normal VBO to the VAO");
-	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &nbuffersize);
-	printf("%d ", nbuffersize);
 
-	std::vector<Vec2> t = theMesh.texCoord;
-	glBindBuffer(GL_ARRAY_BUFFER, BufferIds[3]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vec2)*theMesh.texCoord.size(), &t[0], GL_STATIC_DRAW);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	ExitOnGLError("ERROR: Could not bind the Texture VBO to the VAO");
-	glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &nbuffersize);
-	printf("%d\n", nbuffersize);
-*/
 	ExitOnGLError("ERROR: Could not set VAO attributes");
 	triangleCount = theMesh.indexBuffer.size();
 
@@ -415,7 +450,7 @@ void CreateMesh(const char* filename)
 	Texture = gli::texture2D(gli::load_dds("displacement.dds"));
 
 	if (Texture.empty())  {
-		printf("Error loading spec.dds\n");
+		printf("Error loading displacement.dds\n");
 		exit(EXIT_FAILURE);
 	}
 	glBindTexture(GL_TEXTURE_2D, eartTextureID[3]);
@@ -423,8 +458,6 @@ void CreateMesh(const char* filename)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	GLint swizzleMask[] = { GL_RED, GL_RED, GL_RED, GL_ONE };
-	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
 	if (GLEW_EXT_texture_filter_anisotropic) glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 0);
 	glTexStorage2D(GL_TEXTURE_2D,
 		GLint(Texture.levels()),
@@ -476,6 +509,9 @@ void DestroyCube()
 
 	glDeleteTextures(3, eartTextureID);
 	ExitOnGLError("ERROR: Could not destroy the texture objects");
+
+	destroyFBOs();
+	ExitOnGLError("ERROR: Could not destroy the FBOs");
 }
 
 void DrawCube(void)
@@ -535,4 +571,164 @@ void DrawCube(void)
 
 	glBindVertexArray(0);
 	glUseProgram(0);
+}
+
+
+void initFBOs() {
+	if (GLEW_EXT_framebuffer_blit) {
+		ms_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D, 4, 16);
+		ms_buffer->InitColor_RB(0, GL_RGBA16F_ARB);
+		ms_buffer->InitDepth_RB();
+	}
+	scene_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D);
+	scene_buffer->InitColor_Tex(0, GL_RGBA16F_ARB);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	scene_buffer->InitDepth_RB();
+
+	int w = CurrentWidth;
+	int h = CurrentHeight;
+	for (int i = 0; i<DOWNSAMPLE_BUFFERS; i++) {
+		w /= 2;
+		h /= 2;
+		downsample_buffer[i] = new RenderTexture(w, h, GL_TEXTURE_2D);
+		downsample_buffer[i]->InitColor_Tex(0, GL_RGBA16F_ARB);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	}
+
+	// blur pbuffers
+	for (int i = 0; i<BLUR_BUFFERS; i++) {
+		blur_buffer[i] = new RenderTexture(CurrentHeight / 4, CurrentHeight / 4, GL_TEXTURE_2D);
+		blur_buffer[i]->InitColor_Tex(0, GL_RGBA16F_ARB);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	}
+}
+
+void destroyFBOs() {
+	if (scene_buffer) {
+		delete scene_buffer;
+	}
+	for (int i = 0; i<DOWNSAMPLE_BUFFERS; i++) {
+		if (downsample_buffer[i])
+			delete downsample_buffer[i];
+	}
+	for (int i = 0; i<BLUR_BUFFERS; i++) {
+		if (blur_buffer[i])
+			delete blur_buffer[i];
+	}
+	if (ms_buffer) {
+		delete ms_buffer;
+	}
+}
+
+void initQuad() {
+	GLfloat quad[] = { -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0 }; //normalized trianglestrip
+	GLfloat uv[] = { 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0 }; //matching uv coordinate
+
+	glGenVertexArrays(1, &quadIds[0]);
+	ExitOnGLError("ERROR: Could not generate the VAO");
+	glBindVertexArray(quadIds[0]);
+	ExitOnGLError("ERROR: Could not bind the VAO");
+
+	glGenBuffers(2, &quadIds[1]);
+	ExitOnGLError("ERROR: Could not generate the buffer objects");
+
+	glBindBuffer(GL_ARRAY_BUFFER, quadIds[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+	ExitOnGLError("ERROR: Could not load quad attributes");
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+	ExitOnGLError("ERROR: Could not enable vertex attributes");
+
+	glBindBuffer(GL_ARRAY_BUFFER, quadIds[2]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(uv), uv, GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	quadIds[3] = glCreateProgram();
+	ExitOnGLError("ERROR: Could not create the shader program");
+	{
+		quadIds[4] = LoadShader("passthrough.frag.glsl", GL_FRAGMENT_SHADER);
+		quadIds[5] = LoadShader("passthrough.vert.glsl", GL_VERTEX_SHADER);
+
+		GLint ret;
+		CheckShader(quadIds[5], GL_COMPILE_STATUS, &ret, "unable to compile the vertex shader!");
+		CheckShader(quadIds[4], GL_COMPILE_STATUS, &ret, "unable to compile the fragment shader!");
+
+		glAttachShader(quadIds[3], quadIds[4]);
+		glAttachShader(quadIds[3], quadIds[5]);
+	}
+	glLinkProgram(quadIds[3]);
+	ExitOnGLError("ERROR: Could not link the shader program");
+	GLint ret;
+	CheckShader(quadIds[3], GL_LINK_STATUS, &ret, "unable to link the program!");
+	/*GLchar progStatus[500];
+	GLsizei length;
+	glGetProgramInfoLog(quadIds[3], 500, &length, progStatus);
+	fprintf(stderr, "%s\n", progStatus);*/
+	ptSamplerUniformLocation = glGetUniformLocation(quadIds[3], "ptSampler");
+
+}
+
+void deleteQuad() {
+	glDeleteBuffers(2, &quadIds[1]);
+	glDeleteVertexArrays(1, &quadIds[0]);
+	ExitOnGLError("ERROR: Could not destroy the buffer objects");
+
+	glDetachShader(quadIds[3], quadIds[4]);
+	glDetachShader(quadIds[3], quadIds[5]);
+	glDeleteShader(quadIds[4]);
+	glDeleteShader(quadIds[5]);
+	glDeleteProgram(quadIds[3]);
+	ExitOnGLError("ERROR: Could not destroy the shaders");
+
+}
+
+void drawQuad() {
+	glUseProgram(quadIds[3]);
+	glBindVertexArray(quadIds[0]);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glUseProgram(0);
+	glBindVertexArray(0);
+}
+
+void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
+{
+	//Check if something is wrong with the shader
+	switch (type) {
+	case(GL_COMPILE_STATUS) :
+		glGetShaderiv(id, type, ret);
+		if (*ret == false){
+			int infologLength = 0;
+			glGetShaderiv(id, GL_INFO_LOG_LENGTH, &infologLength);
+			GLchar* buffer = new GLchar[infologLength];
+			GLsizei charsWritten = 0;
+			std::cout << onfail << std::endl;
+			glGetShaderInfoLog(id, infologLength, &charsWritten, buffer);
+			std::cout << buffer << std::endl;
+			delete[] buffer;
+		}
+		break;
+	case(GL_LINK_STATUS) :
+		glGetProgramiv(id, type, ret);
+		if (*ret == false){
+			int infologLength = 0;
+			glGetProgramiv(id, GL_INFO_LOG_LENGTH, &infologLength);
+			GLchar* buffer2 = new GLchar[infologLength];
+			GLsizei charsWritten = 0;
+			std::cout << onfail << std::endl;
+			glGetProgramInfoLog(id, infologLength, &charsWritten, buffer2);
+			std::cout << buffer2 << std::endl;
+			delete[] buffer2;
+		}
+		break;
+	default:
+		break;
+	};
 }

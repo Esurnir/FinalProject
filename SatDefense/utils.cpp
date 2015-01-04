@@ -160,10 +160,6 @@ GLuint LoadShader(const char* filename, GLenum shader_type)
           glShaderSource(shader_id, 1, &glsl_source, NULL);
           glCompileShader(shader_id);
           ExitOnGLError("Could not compile a shader");
-		  GLchar shaderStatus[500];
-		  GLsizei length;
-		  glGetShaderInfoLog(shader_id, 500, &length, shaderStatus);
-		  fprintf(stderr, "%s\n", shaderStatus);
         }
         else
           fprintf(stderr, "ERROR: Could not create a shader.\n");
