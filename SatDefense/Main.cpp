@@ -616,10 +616,14 @@ void initFBOs() {
 	if (GLEW_EXT_framebuffer_blit && aamode) {
 		ms_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D, 4, 0);
 		ms_buffer->InitColor_RB(0, GL_RGBA16F_ARB);
+		ms_buffer->InitColor_RB(1, GL_RGBA16F_ARB);
 		ms_buffer->InitDepth_RB();
 	}
 	scene_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D);
 	scene_buffer->InitColor_Tex(0, GL_RGBA16F_ARB);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	scene_buffer->InitColor_Tex(1, GL_RGBA16F_ARB);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	scene_buffer->InitDepth_RB();
