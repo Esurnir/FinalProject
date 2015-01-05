@@ -4,7 +4,8 @@ in vec3 ex_Normal;
 in vec2 ex_texCoord;
 in vec3 ex_eye;
 in vec3 debugNormal;
-out vec4 out_Color;
+layout(location = 0) vec4 out_Color;
+layout(location = 1) vec4 out_specular;
 
 uniform vec3 lDir;
 uniform sampler2D texImage;
@@ -66,5 +67,6 @@ void main(void)
 	//out_Color = vec4(spec);
 	//out_Color = vec4(fresnelFactor*intensity);
 	out_Color.a = fresnelFactor*intensity;
+	out_specular = spec;
 	//out_Color = vec4(out_Color.a);
 }

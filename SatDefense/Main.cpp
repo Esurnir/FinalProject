@@ -178,8 +178,9 @@ void RenderFunction(void)
 		ExitOnGLError("Could not bind framebuffer");
 		glDisable(GL_MULTISAMPLE);
 	}
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, buffers);
 	
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	DrawCube();
@@ -187,6 +188,8 @@ void RenderFunction(void)
 	
 	if (aamode) {
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, scene_buffer->GetFramebuffer());
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 		GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 		if (status != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -195,8 +198,15 @@ void RenderFunction(void)
 		}
 
 		ExitOnGLError("Could not bind draw buffer");
+		
 		glBlitFramebuffer(0, 0, CurrentWidth, CurrentHeight, 0, 0, CurrentWidth, CurrentHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		ExitOnGLError("Could not blit buffer");
+		glReadBuffer(GL_COLOR_ATTACHMENT1);
+		glDrawBuffer(GL_COLOR_ATTACHMENT1);
+		glBlitFramebuffer(0, 0, CurrentWidth, CurrentHeight, 0, 0, CurrentWidth, CurrentHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0); //resetting default
+
 	}/*
 	scene_buffer->Bind();
 	ExitOnGLError("Could not bind Read buffer");
