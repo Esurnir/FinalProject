@@ -857,12 +857,14 @@ void initBlurShader() {
 }
 
 void blur(RenderTexture* src, RenderTexture* dst,bool vertical) {
+	glUseProgram(blurShaderIds[0]);
 	src->Bind();
 	glActiveTexture(GL_TEXTURE0);
 	dst->Activate();
+	glUniform1i(tex0Location, 0);
 	glViewport(0, 0, CurrentWidth / 4, CurrentHeight / 4);
-	float x_offset = 1 / CurrentWidth;
-	float y_offset = 1 / CurrentHeight;
+	float x_offset = 1.0 / CurrentWidth;
+	float y_offset = 1.0 / CurrentHeight;
 	glm::vec2 offset = vertical ? glm::vec2(0, y_offset) : glm::vec2(x_offset, 0);
 	glUseProgram(blurShaderIds[0]);
 	glUniform2fv(pixelOffsetUniformLocation,1,&offset[0]);
