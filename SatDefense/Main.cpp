@@ -573,7 +573,7 @@ void DrawCube(void)
 	CubeAngle = DegreesToRadians(CubeRotation);
 	LastTime = Now;
 	glm::mat4 modMatrix = glm::rotate(glm::mat4(), CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
+	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -3.0f));
 	//viewMatrix = glm::rotate(viewMatrix, (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f));
 	glm::mat4 projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 100.0f);
 	glm::mat4 mvp = projMatrix*viewMatrix*modMatrix;
