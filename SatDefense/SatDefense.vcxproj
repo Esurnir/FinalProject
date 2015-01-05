@@ -168,6 +168,8 @@
     <None Include="alphaMultiply.frag.glsl" />
     <None Include="blur.frag.glsl" />
     <None Include="composition.frag.glsl" />
+    <None Include="EarthShader.TCS.glsl" />
+    <None Include="EarthShader.TES.glsl" />
     <None Include="freeglut.dll">
       <DeploymentContent>true</DeploymentContent>
     </None>

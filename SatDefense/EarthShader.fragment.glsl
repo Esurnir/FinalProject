@@ -3,7 +3,7 @@
 in vec3 ex_Normal;
 in vec2 ex_texCoord;
 in vec3 ex_eye;
-in vec3 debugNormal;
+//in vec3 debugNormal;
 layout(location = 0) out vec4 out_Color;
 layout(location = 1) out vec4 out_specular;
 
@@ -63,7 +63,7 @@ void main(void)
 	vec4 diffColor = intensity * mymaterial.diffuse * texColor;
 	
 
-	out_Color = max(diffColor + spec + nightColor, nightColor);// nightColor);
+	out_Color = max(diffColor + nightColor, nightColor)+spec;// nightColor);
 	//out_Color = vec4(spec);
 	//out_Color = vec4(fresnelFactor*intensity);
 	out_Color.a = fresnelFactor*intensity;

@@ -22,7 +22,10 @@ texImageLocation,
 nightImageLocation,
 specImageLocation,
 triangleCount,
-mvpMatrixUniformLocation,
+gVPMatrixUniformLocation,
+mMatrixUniformLocation,
+gDispFactorUniformLocation,
+gDisplacementMapUniformLocation,
 ptSamplerUniformLocation,
 dSamplerUniformLocation,
 specularSamplerUniformLocation,
@@ -33,7 +36,7 @@ tex0Location,
 eartTextureID[4] = { 0 }, //0 = diffuse 1 = night 2 = specular 3 = displacement
 BufferIds[3] = { 0 }, //0 = VAO 1 = VBO 2 = VEB
 quadIds[6] = { 0 },
-ShaderIds[3] = { 0 },
+ShaderIds[5] = { 0 },
 blurShaderIds[3] = { 0 },
 downSampleShaderIds[2] = { 0 },
 compositShaderIds[2] = { 0 };
@@ -125,7 +128,7 @@ void InitWindow(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 
-	glutInitContextVersion(3, 3);
+	glutInitContextVersion(4, 2);
 	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 
@@ -276,11 +279,17 @@ void CreateMesh(const char* filename)
 	{
 		ShaderIds[1] = LoadShader("EarthShader.fragment.glsl", GL_FRAGMENT_SHADER);
 		ShaderIds[2] = LoadShader("EarthShader.vertex.glsl", GL_VERTEX_SHADER);
+		ShaderIds[3] = LoadShader("EarthShader.TCS.glsl", GL_TESS_CONTROL_SHADER);
+		ShaderIds[4] = LoadShader("EarthShader.TES.glsl", GL_TESS_EVALUATION_SHADER);
 		glAttachShader(ShaderIds[0], ShaderIds[1]);
 		glAttachShader(ShaderIds[0], ShaderIds[2]);
+		glAttachShader(ShaderIds[0], ShaderIds[3]);
+		glAttachShader(ShaderIds[0], ShaderIds[4]);
 		GLint ret;
 		CheckShader(ShaderIds[2], GL_COMPILE_STATUS, &ret, "unable to compile the vertex shader!");
 		CheckShader(ShaderIds[1], GL_COMPILE_STATUS, &ret, "unable to compile the fragment shader!");
+		CheckShader(ShaderIds[3], GL_COMPILE_STATUS, &ret, "unable to compile the TCS shader!");
+		CheckShader(ShaderIds[4], GL_COMPILE_STATUS, &ret, "unable to compile the TES shader!");
 	}
 	glLinkProgram(ShaderIds[0]);
 	ExitOnGLError("ERROR: Could not link the shader program");
@@ -293,7 +302,10 @@ void CreateMesh(const char* filename)
 	texImageLocation = glGetUniformLocation(ShaderIds[0], "texImage");
 	nightImageLocation = glGetUniformLocation(ShaderIds[0], "nightImage");
 	specImageLocation = glGetUniformLocation(ShaderIds[0], "specImage");
-	mvpMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvpMatrix");
+	gVPMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "gVP");
+	mMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mMatrix");
+	gDispFactorUniformLocation = glGetUniformLocation(ShaderIds[0], "gDispFactor");
+	gDisplacementMapUniformLocation = glGetUniformLocation(ShaderIds[0], "gDisplacementMap");
 	mvMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvMatrix");
 	
 
@@ -574,10 +586,10 @@ void DrawCube(void)
 	CubeAngle = DegreesToRadians(CubeRotation);
 	LastTime = Now;
 	glm::mat4 modMatrix = glm::rotate(glm::mat4(), CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -3.0f));
+	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.5f));
 	//viewMatrix = glm::rotate(viewMatrix, (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f));
-	glm::mat4 projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 100.0f);
-	glm::mat4 mvp = projMatrix*viewMatrix*modMatrix;
+	glm::mat4 projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 10.0f);
+	glm::mat4 vp = projMatrix*viewMatrix;
 	glm::mat4 mv = viewMatrix*modMatrix;
 	glm::vec4 lightDir(1.0f, 0.0f, 0.0f,0.0f);
 	lightDir = glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), CubeAngle/(float)1.5, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
@@ -590,8 +602,11 @@ void DrawCube(void)
 
 	
 	glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &normalMatrix[0][0]);
-	glUniformMatrix4fv(mvpMatrixUniformLocation, 1, GL_FALSE, &mvp[0][0]);
+	glUniformMatrix4fv(mMatrixUniformLocation, 1, GL_FALSE, &modMatrix[0][0]);
 	glUniformMatrix4fv(mvMatrixUniformLocation, 1, GL_FALSE, &mv[0][0]);
+	glUniformMatrix4fv(gVPMatrixUniformLocation, 1, GL_FALSE, &vp[0][0]);
+	glUniform1f(gDispFactorUniformLocation, 0.01);
+	glUniform1i(gDisplacementMapUniformLocation, 3);
 
 	glUniform3fv(lDirUniformLocation, 1, &lDir[0]);
 	glUniform1i(texImageLocation, 0);
@@ -607,12 +622,15 @@ void DrawCube(void)
 	
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, eartTextureID[2]);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, eartTextureID[3]);
 
 	glBindVertexArray(BufferIds[0]);
 	ExitOnGLError("ERROR: Could not bind the VAO for drawing purposes");
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, BufferIds[2]);
 
-	glDrawElements(GL_TRIANGLES, triangleCount, GL_UNSIGNED_INT,0);
+	//glDrawElements(GL_TRIANGLES, triangleCount, GL_UNSIGNED_INT,0);
+	glDrawElements(GL_PATCHES, triangleCount, GL_UNSIGNED_INT, 0);
 	//glDrawArrays(GL_TRIANGLES, 0, triangleCount*3);
 	//glutSolidTeapot(1);
 	ExitOnGLError("ERROR: Could not draw the cube");

@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
  
 in vec2 ex_teC;
 out vec4 out_colour;

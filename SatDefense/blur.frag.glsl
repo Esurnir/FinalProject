@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
 //stolen from https://software.intel.com/en-us/blogs/2014/07/15/an-investigation-of-fast-real-time-gpu-based-image-blur-algorithms because the original sample used assembly for its filter and i can't stand that
 
 in vec2 ex_teC;
