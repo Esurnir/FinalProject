@@ -155,7 +155,7 @@ unsigned int generate1DConvolutionFP_filter(const char* vs, float *weights, int 
 	int shader_id;
 	if (0 != (shader_id = glCreateShader(GL_FRAGMENT_SHADER)))
 	{
-		glShaderSource(shader_id, 1, (char*)ost.str().c_str(), NULL);
+		glShaderSource(shader_id, 1, (const GLchar* const*)ost.str().c_str(), NULL);
 		glCompileShader(shader_id);
 		ExitOnGLError("Could not compile a shader");
 	}

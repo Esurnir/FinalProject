@@ -569,7 +569,7 @@ void DrawCube(void)
 	glm::mat4 mvp = projMatrix*viewMatrix*modMatrix;
 	glm::mat4 mv = viewMatrix*modMatrix;
 	glm::vec4 lightDir(1.0f, 0.0f, 0.0f,0.0f);
-	lightDir = glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), CubeAngle/2, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
+	lightDir = glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), CubeAngle/(float)1.5, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
 	glm::vec3 lDir(lightDir);
 	
 	glm::mat3 normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix*modMatrix));// TransposeInverse3x3ModelView(&ModelMatrix, &ViewMatrix);
