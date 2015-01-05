@@ -39,9 +39,9 @@ void main(void)
 	float intensity = max(dot(n, light), 0.0);
 	float Bias = 0.0;
 	float Scale = 3;
-	float Pow = 2;
+	float Pow = 5;
 	float fresnelFactor = Bias + Scale * pow(1.0 + dot(-e, n), Pow);
-	fresnelFactor = clamp(fresnelFactor, 0, 1);
+	//fresnelFactor = clamp(fresnelFactor, 0, 1);
 	
 	
 	// if the vertex is lit compute the specular color
@@ -64,8 +64,7 @@ void main(void)
 
 	out_Color = max(diffColor + spec + nightColor, nightColor);// nightColor);
 	//out_Color = vec4(spec);
-	//out_Color = vec4(fresnelFactor);
-	out_Color = mix(out_Color, fresnelColour, fresnelFactor*intensity);
-	out_Color.a = fresnelFactor*intensity+specfactor;
+	//out_Color = vec4(fresnelFactor*intensity);
+	out_Color.a = fresnelFactor*intensity;
 	//out_Color = vec4(out_Color.a);
 }
