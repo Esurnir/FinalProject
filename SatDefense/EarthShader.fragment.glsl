@@ -4,8 +4,8 @@ in vec3 ex_Normal;
 in vec2 ex_texCoord;
 in vec3 ex_eye;
 in vec3 debugNormal;
-layout(location = 0) vec4 out_Color;
-layout(location = 1) vec4 out_specular;
+layout(location = 0) out vec4 out_Color;
+layout(location = 1) out vec4 out_specular;
 
 uniform vec3 lDir;
 uniform sampler2D texImage;
@@ -21,8 +21,8 @@ struct material
 material mymaterial = material(
 	vec4(0.2, 0.2, 0.2, 1.0),
 	vec4(1.0, 1.0, 1.0, 1.0),
-	vec4(1.0, 1.0, 1.0, 1.0),
-	30.0
+	vec4(.7, .7, .7, 1.0),
+	50.0
 	);
 vec4 fresnelColour = vec4(0.3, 0.3, 1.0, 1.0);
 
