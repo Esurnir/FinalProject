@@ -25,6 +25,7 @@ triangleCount,
 mvpMatrixUniformLocation,
 ptSamplerUniformLocation,
 dSamplerUniformLocation,
+specularSamplerUniformLocation,
 pixelOffsetUniformLocation,
 sceneSamplerUniformLocation,
 blurSamplerUniformLocation,
@@ -802,7 +803,10 @@ void downSample(RenderTexture* src, RenderTexture* dst,RenderTexture* tmp) {
 	glUseProgram(downSampleShaderIds[0]);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(dSamplerUniformLocation, 0);
+	glUniform1i(specularSamplerUniformLocation, 1);
 	src->Bind();
+	glActiveTexture(GL_TEXTURE1);
+	src->Bind(1);
 	tmp->Activate();
 	glViewport(0, 0, CurrentWidth / 2, CurrentHeight / 2);
 	drawQuad();
@@ -868,6 +872,7 @@ void initBlurShader() {
 	dSamplerUniformLocation = glGetUniformLocation(downSampleShaderIds[0], "dSampler");
 	sceneSamplerUniformLocation = glGetUniformLocation(compositShaderIds[0], "sceneSampler");
 	blurSamplerUniformLocation = glGetUniformLocation(compositShaderIds[0], "blurSampler");
+	specularSamplerUniformLocation = glGetUniformLocation(downSampleShaderIds[0], "specularSampler");
 }
 
 void blur(RenderTexture* src, RenderTexture* dst,bool vertical) {
