@@ -43,20 +43,19 @@
     <Text Include="EarthShader.vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="test.dds">
-      <Filter>Source Files</Filter>
-    </Image>
     <Image Include="carver.dds" />
     <Image Include="earth-medium.dds" />
     <Image Include="spec.dds" />
     <Image Include="earth.dds" />
     <Image Include="night.dds" />
     <Image Include="Displacement.dds" />
+    <Image Include="test.dds" />
   </ItemGroup>
   <ItemGroup>
     <None Include="freeglut.dll" />
     <None Include="glew32.dll" />
     <None Include="passthrough.frag.glsl" />
     <None Include="passthrough.vert.glsl" />
+    <None Include="blur.frag.glsl" />
   </ItemGroup>
 </Project>
