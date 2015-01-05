@@ -44,7 +44,7 @@ void main(void)
 	vec4 blurred = texture(blurSampler,ex_teC);
 	vec4 effect = radial(blurSampler,ex_teC,30,1.0,0.95);
 	
-	vec4 c = mix(scene,blurred,blurAmount);
+	vec4 c = scene + blurred;
 	
 	c+= effect*effectAmount;
 	

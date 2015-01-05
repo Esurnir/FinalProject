@@ -43,7 +43,7 @@ void main(void)
     for( int i = 0; i < stepCount; i++ )                                                                                                                            
     {                                                                                                                                                               
         vec2 texCoordOffset = gOffsets[i] * pixelOffset;    
-		vec3 col = texture(tex0, ex_teC + texCoordOffset).xyz + texture(tex0, ex_teC + texCoordOffset).xyz;
+		vec3 col = texture(tex0, ex_teC + texCoordOffset).xyz + texture(tex0, ex_teC - texCoordOffset).xyz;
         colOut += gWeights[i] * col;                                                                                                                              
     }                                                                                                                                                               
  

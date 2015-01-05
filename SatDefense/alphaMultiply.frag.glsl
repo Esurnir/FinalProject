@@ -6,5 +6,6 @@ uniform sampler2D dSampler;
 
 void main(void)
 {
-	out_colour = vec4(texture(dSampler, ex_teC).rgb * texture(dSampler,ex_teC).a,1);
+	vec2 texCoordinate = ex_teC; //((ex_teC - vec2(0.5))*0.95) + vec2(0.5);
+	out_colour = vec4(vec3(0.5,0.5,1)* texture(dSampler, texCoordinate).a, 1);
 }
