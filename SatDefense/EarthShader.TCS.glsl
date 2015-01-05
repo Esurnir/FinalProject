@@ -41,12 +41,23 @@ void main()
 	es_texCoord[gl_InvocationID] = cs_texCoord[gl_InvocationID];
 	es_ex_eye[gl_InvocationID] = cs_ex_eye[gl_InvocationID];
 	es_wPos[gl_InvocationID] = cs_wPos[gl_InvocationID];
-	
-	gl_TessLevelOuter[0] = ((fresnelTFactor[1] + fresnelTFactor[2])/2)*5;
-	gl_TessLevelOuter[1] = ((fresnelTFactor[0] + fresnelTFactor[2])/2)*5;
-	gl_TessLevelOuter[2] = ((fresnelTFactor[0] + fresnelTFactor[1])/2)*5;
-	gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2])/3;
-	
+
+	float normaldot[3];
+	normaldot[0] = dot(es_Normal[0], vec3(0, 0, 1));
+	normaldot[1] = dot(es_Normal[1], vec3(0, 0, 1));
+	normaldot[2] = dot(es_Normal[2], vec3(0, 0, 1));
+	if (normaldot[0] < 0 && normaldot[1] < 0 && normaldot[2]< 0) {
+		gl_TessLevelOuter[0] = 0;
+		gl_TessLevelOuter[1] = 0;
+		gl_TessLevelOuter[2] = 0;
+		gl_TessLevelInner[0] = 0;
+	}
+	else {
+		gl_TessLevelOuter[0] = ((fresnelTFactor[1] + fresnelTFactor[2]) / 2);
+		gl_TessLevelOuter[1] = ((fresnelTFactor[0] + fresnelTFactor[2]) / 2);
+		gl_TessLevelOuter[2] = ((fresnelTFactor[0] + fresnelTFactor[1]) / 2);
+		gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) / 3;
+	}
 	
 	
 	                         

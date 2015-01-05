@@ -21,16 +21,17 @@ uniform mat4 mMatrix;
 
 void main(void)
 {
-	
+
 	vec4 p = vec4(in_Position, 1.0);
-	cs_wPos = vec3(mMatrix * p); //mvpMatrix * p;
+	//mvpMatrix * p;
 	vec3 test = NormalInvMatrix*in_Normal;
 	cs_Normal = normalize(test);
-	cs_texCoord = in_texCoord ;
 	cs_ex_eye = normalize(vec3(-(mvMatrix*p)));
 	float Bias = 0.0;
-	float Scale = 3;
-	float Pow = 10;
-	fresnelTFactor = Bias + Scale * pow(1.0 + dot(-cs_ex_eye, cs_Normal), Pow);
-
+	float Scale = 0.2;
+	float Pow = 0.5;
+	fresnelTFactor = 10 * pow(1 - abs(dot(-cs_ex_eye, cs_Normal)), 5);
+	fresnelTFactor = fresnelTFactor;
+	cs_texCoord = in_texCoord;
+	cs_wPos = vec3(mMatrix * p);
 }
