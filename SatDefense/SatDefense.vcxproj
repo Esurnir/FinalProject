@@ -122,11 +122,13 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BlurShaderGenerator.cpp" />
     <ClCompile Include="objLoader.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BlurShaderGenerator.h" />
     <ClInclude Include="objLoader.h" />
     <ClInclude Include="RenderTextureFBO.h" />
     <ClInclude Include="Utils.h" />
