@@ -26,13 +26,16 @@ mvpMatrixUniformLocation,
 ptSamplerUniformLocation,
 dSamplerUniformLocation,
 pixelOffsetUniformLocation,
+sceneSamplerUniformLocation,
+blurSamplerUniformLocation,
 tex0Location,
 eartTextureID[4] = { 0 }, //0 = diffuse 1 = night 2 = specular 3 = displacement
 BufferIds[3] = { 0 }, //0 = VAO 1 = VBO 2 = VEB
 quadIds[6] = { 0 },
 ShaderIds[3] = { 0 },
 blurShaderIds[3] = { 0 },
-downSampleShaderIds[2] = { 0 };
+downSampleShaderIds[2] = { 0 },
+compositShaderIds[2] = { 0 };
 bool aamode = 1;
 
 #define DOWNSAMPLE_BUFFERS 2
@@ -208,11 +211,15 @@ void RenderFunction(void)
 	blur(blur_buffer[0], blur_buffer[1], true);
 	
 
-	glUseProgram(quadIds[3]);
-	glUniform1i(ptSamplerUniformLocation, 0);
+	glUseProgram(compositShaderIds[0]);
+	glUniform1i(sceneSamplerUniformLocation, 0);
+	glUniform1i(blurSamplerUniformLocation, 1);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glActiveTexture(GL_TEXTURE0);
 	ExitOnGLError("Could not bind Read buffer");
+	glActiveTexture(GL_TEXTURE0);
+	scene_buffer->Bind();
+	ExitOnGLError("Could not bind scene texture");
+	glActiveTexture(GL_TEXTURE1);
 	blur_buffer[1]->Bind();
 	glViewport(0, 0, CurrentWidth, CurrentHeight);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -802,26 +809,33 @@ void downSample(RenderTexture* src, RenderTexture* dst,RenderTexture* tmp) {
 void initBlurShader() {
 	blurShaderIds[0] = glCreateProgram();
 	downSampleShaderIds[0] = glCreateProgram();
+	compositShaderIds[0] = glCreateProgram();
 	ExitOnGLError("ERROR: Could not create the shader program");
 	{
 		blurShaderIds[1] = LoadShader("passthrough.vert.glsl", GL_VERTEX_SHADER);
 		blurShaderIds[2] = LoadShader("blur.frag.glsl", GL_FRAGMENT_SHADER);
 		downSampleShaderIds[1] = LoadShader("alphaMultiply.frag.glsl", GL_FRAGMENT_SHADER);
+		compositShaderIds[1] = LoadShader("composition.frag.glsl", GL_FRAGMENT_SHADER);
 
 		GLint ret;
 		CheckShader(blurShaderIds[1], GL_COMPILE_STATUS, &ret, "unable to compile the vertex shader!");
 		CheckShader(blurShaderIds[2], GL_COMPILE_STATUS, &ret, "unable to compile the blur fragment shader!");
 		CheckShader(downSampleShaderIds[1], GL_COMPILE_STATUS, &ret, "unable to compile the downsample fragment shader!");
+		CheckShader(compositShaderIds[1], GL_COMPILE_STATUS, &ret, "unable to compile the composition fragment shader!");
 
 		glAttachShader(blurShaderIds[0], blurShaderIds[1]);
 		glAttachShader(blurShaderIds[0], blurShaderIds[2]);
 		glAttachShader(downSampleShaderIds[0],blurShaderIds[1]);
 		glAttachShader(downSampleShaderIds[0], downSampleShaderIds[1]);
+		glAttachShader(compositShaderIds[0], blurShaderIds[1]);
+		glAttachShader(compositShaderIds[0], compositShaderIds[1]);
 	}
 	glLinkProgram(blurShaderIds[0]);
 	ExitOnGLError("ERROR: Could not link the blur shader program");
 	glLinkProgram(downSampleShaderIds[0]);
 	ExitOnGLError("ERROR: Could not link the blur shader program");
+	glLinkProgram(compositShaderIds[0]);
+	ExitOnGLError("ERROR: Could not link the composit shader program");
 	GLint ret;
 	CheckShader(blurShaderIds[0], GL_LINK_STATUS, &ret, "unable to link blur the program!");
 	CheckShader(downSampleShaderIds[0], GL_LINK_STATUS, &ret, "unable to link the program!");
@@ -838,6 +852,8 @@ void initBlurShader() {
 	pixelOffsetUniformLocation = glGetUniformLocation(blurShaderIds[0], "pixelOffset");
 	tex0Location = glGetUniformLocation(blurShaderIds[0], "tex0");
 	dSamplerUniformLocation = glGetUniformLocation(downSampleShaderIds[0], "dSampler");
+	sceneSamplerUniformLocation = glGetUniformLocation(compositShaderIds[0], "sceneSampler");
+	blurSamplerUniformLocation = glGetUniformLocation(compositShaderIds[0], "blurSampler");
 }
 
 void blur(RenderTexture* src, RenderTexture* dst,bool vertical) {
