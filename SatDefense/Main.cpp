@@ -24,10 +24,13 @@ specImageLocation,
 triangleCount,
 mvpMatrixUniformLocation,
 ptSamplerUniformLocation,
+pixelOffsetUniformLocation,
+tex0Location,
 eartTextureID[4] = { 0 }, //0 = diffuse 1 = night 2 = specular 3 = displacement
 BufferIds[3] = { 0 }, //0 = VAO 1 = VBO 2 = VEB
 quadIds[6] = { 0 },
-ShaderIds[3] = { 0 }; 
+ShaderIds[3] = { 0 },
+blurShaderIds[3] = { 0 };
 bool aamode = 1;
 
 #define DOWNSAMPLE_BUFFERS 2
@@ -55,6 +58,9 @@ void drawQuad();
 void destroyQuad();
 void destroyFBOs();
 void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail);
+void downSample(RenderTexture* src, RenderTexture* dst);
+void initBlurShader();
+void blur(RenderTexture*, RenderTexture*, bool);
 
 void initFBOs();
 
@@ -106,6 +112,7 @@ void Initialize(int argc, char* argv[])
 
 	CreateMesh("earth.obj");
 	initQuad();
+	initBlurShader();
 }
 
 void InitWindow(int argc, char* argv[])
@@ -193,6 +200,14 @@ void RenderFunction(void)
 	glBlitFramebuffer(0, 0, CurrentWidth, CurrentHeight , 0, 0, CurrentWidth, CurrentHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	
 	ExitOnGLError("Could not blit the to screen");*/
+	downSample(scene_buffer, downsample_buffer[0]);
+	downSample(downsample_buffer[0], downsample_buffer[1]);
+	blur(downsample_buffer[1], blur_buffer[0], false);
+	blur(blur_buffer[0], blur_buffer[1], true);
+	
+
+	glUseProgram(quadIds[3]);
+	glUniform1i(ptSamplerUniformLocation, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glActiveTexture(GL_TEXTURE0);
 	ExitOnGLError("Could not bind Read buffer");
@@ -717,10 +732,8 @@ void deleteQuad() {
 
 void drawQuad() {
 	glDisable(GL_DEPTH_TEST);
-	glUseProgram(quadIds[3]);
 	glBindVertexArray(quadIds[0]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glUseProgram(0);
 	glBindVertexArray(0);
 }
 
@@ -757,4 +770,60 @@ void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
 	default:
 		break;
 	};
+}
+
+void downSample(RenderTexture* src, RenderTexture* dst) {
+	glUseProgram(quadIds[3]);
+	glActiveTexture(GL_TEXTURE0);
+	src->Bind();
+	dst->Activate();
+	drawQuad();
+	glUseProgram(0);
+	dst->Deactivate();
+}
+
+void initBlurShader() {
+	blurShaderIds[0] = glCreateProgram();
+	ExitOnGLError("ERROR: Could not create the shader program");
+	{
+		blurShaderIds[1] = LoadShader("passthrough.vert.glsl", GL_VERTEX_SHADER);
+		blurShaderIds[2] = LoadShader("blur.frag.glsl", GL_FRAGMENT_SHADER);
+		
+
+		GLint ret;
+		CheckShader(blurShaderIds[1], GL_COMPILE_STATUS, &ret, "unable to compile the vertex shader!");
+		CheckShader(blurShaderIds[2], GL_COMPILE_STATUS, &ret, "unable to compile the blur fragment shader!");
+
+		glAttachShader(blurShaderIds[0], blurShaderIds[1]);
+		glAttachShader(blurShaderIds[0], blurShaderIds[2]);
+	}
+	glLinkProgram(blurShaderIds[0]);
+	ExitOnGLError("ERROR: Could not link the shader program");
+	GLint ret;
+	CheckShader(blurShaderIds[0], GL_LINK_STATUS, &ret, "unable to link the program!");
+	if (GLEW_ARB_get_program_binary) {
+		const size_t MAX_SIZE = 1 << 24;
+		char*  binary = new char[MAX_SIZE];
+		GLenum format;
+		GLint flength;
+		glGetProgramBinary(blurShaderIds[0], MAX_SIZE, &flength, &format, binary);
+		std::ofstream binaryfile("blur.txt");
+		binaryfile.write(binary, flength);
+		delete[] binary;
+	}
+	pixelOffsetUniformLocation = glGetUniformLocation(blurShaderIds[0], "pixelOffset");
+	tex0Location = glGetUniformLocation(blurShaderIds[0], "tex0");
+}
+
+void blur(RenderTexture* src, RenderTexture* dst,bool vertical) {
+	src->Bind();
+	glActiveTexture(GL_TEXTURE0);
+	dst->Activate();
+	float x_offset = 1 / CurrentWidth;
+	float y_offset = 1 / CurrentHeight;
+	glm::vec2 offset = vertical ? glm::vec2(0, y_offset) : glm::vec2(x_offset, 0);
+	glUseProgram(blurShaderIds[0]);
+	glUniform2fv(pixelOffsetUniformLocation,1,&offset[0]);
+	glUniform1i(tex0Location, 0);
+	drawQuad();
 }
