@@ -163,6 +163,7 @@
     <Image Include="test.dds" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="alphaMultiply.frag.glsl" />
     <None Include="blur.frag.glsl" />
     <None Include="freeglut.dll">
       <DeploymentContent>true</DeploymentContent>

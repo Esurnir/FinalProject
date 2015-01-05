@@ -57,5 +57,6 @@
     <None Include="passthrough.frag.glsl" />
     <None Include="passthrough.vert.glsl" />
     <None Include="blur.frag.glsl" />
+    <None Include="alphaMultiply.frag.glsl" />
   </ItemGroup>
 </Project>
