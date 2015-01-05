@@ -163,6 +163,7 @@ void ResizeFunction(int Width, int Height)
 void RenderFunction(void)
 {
 	++FrameCount;
+	glViewport(0, 0, CurrentWidth, CurrentHeight);
 	
 	if (aamode) {
 		ms_buffer->Activate();
@@ -213,6 +214,7 @@ void RenderFunction(void)
 	glActiveTexture(GL_TEXTURE0);
 	ExitOnGLError("Could not bind Read buffer");
 	blur_buffer[1]->Bind();
+	glViewport(0, 0, CurrentWidth, CurrentHeight);
 	glClear(GL_COLOR_BUFFER_BIT);
 	drawQuad();
 
@@ -628,7 +630,7 @@ void initFBOs() {
 
 	// blur pbuffers
 	for (int i = 0; i<BLUR_BUFFERS; i++) {
-		blur_buffer[i] = new RenderTexture(CurrentHeight / 4, CurrentHeight / 4, GL_TEXTURE_2D);
+		blur_buffer[i] = new RenderTexture(CurrentWidth / 4, CurrentHeight / 4, GL_TEXTURE_2D);
 		blur_buffer[i]->InitColor_Tex(0, GL_RGBA16F_ARB);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -733,6 +735,7 @@ void deleteQuad() {
 
 void drawQuad() {
 	glDisable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glBindVertexArray(quadIds[0]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
@@ -774,11 +777,13 @@ void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
 }
 
 void downSample(RenderTexture* src, RenderTexture* dst,RenderTexture* tmp) {
+	
 	glUseProgram(downSampleShaderIds[0]);
 	glActiveTexture(GL_TEXTURE0);
 	glUniform1i(dSamplerUniformLocation, 0);
 	src->Bind();
 	tmp->Activate();
+	glViewport(0, 0, CurrentWidth / 2, CurrentHeight / 2);
 	drawQuad();
 	glUseProgram(0);
 	tmp->Deactivate();
@@ -788,6 +793,7 @@ void downSample(RenderTexture* src, RenderTexture* dst,RenderTexture* tmp) {
 	glActiveTexture(GL_TEXTURE0);
 	tmp->Bind();
 	dst->Activate();
+	glViewport(0, 0, CurrentWidth / 4, CurrentHeight / 4);
 	drawQuad();
 	glUseProgram(0);
 	dst->Deactivate();
@@ -838,6 +844,7 @@ void blur(RenderTexture* src, RenderTexture* dst,bool vertical) {
 	src->Bind();
 	glActiveTexture(GL_TEXTURE0);
 	dst->Activate();
+	glViewport(0, 0, CurrentWidth / 4, CurrentHeight / 4);
 	float x_offset = 1 / CurrentWidth;
 	float y_offset = 1 / CurrentHeight;
 	glm::vec2 offset = vertical ? glm::vec2(0, y_offset) : glm::vec2(x_offset, 0);
