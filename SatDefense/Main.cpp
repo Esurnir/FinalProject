@@ -687,7 +687,7 @@ void initQuad() {
 		char*  binary = new char[MAX_SIZE];
 		GLenum format;
 		GLint flength;
-		glGetProgramBinary(ShaderIds[0], MAX_SIZE, &flength, &format, binary);
+		glGetProgramBinary(quadIds[3], MAX_SIZE, &flength, &format, binary);
 		std::ofstream binaryfile("passthrough.txt");
 		binaryfile.write(binary, flength);
 		delete[] binary;
