@@ -33,7 +33,8 @@ void main()
     // Interpolate the attributes of the output vertex using the barycentric coordinates        
     ex_texCoord = interpolate2D(es_texCoord[0], es_texCoord[1], es_texCoord[2]);    
     ex_Normal = interpolate3D(es_Normal[0], es_Normal[1], es_Normal[2]);            
-    ex_Normal = normalize(ex_Normal);                                                     
+    ex_Normal = normalize(ex_Normal);                                      
+	ex_eye = interpolate3D(es_ex_eye[0], es_ex_eye[1], es_ex_eye[2]);
     vec3 position = interpolate3D(es_wPos[0], es_wPos[1], es_wPos[2]);    
                                                                                                 
     // Displace the vertex along the normal                                                     
