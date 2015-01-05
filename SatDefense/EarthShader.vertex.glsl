@@ -30,8 +30,8 @@ void main(void)
 	float Bias = 0.0;
 	float Scale = 0.2;
 	float Pow = 0.5;
-	fresnelTFactor = 10 * pow(1 - abs(dot(-cs_ex_eye, cs_Normal)), 5);
+	fresnelTFactor = 10 * pow(1 - abs(dot(-cs_ex_eye, cs_Normal)), 1);
 	fresnelTFactor = fresnelTFactor;
 	cs_texCoord = in_texCoord;
-	cs_wPos = vec3(mMatrix * p);
+	cs_wPos = vec3(mvMatrix * p);
 }

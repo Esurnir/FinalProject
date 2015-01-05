@@ -31,6 +31,7 @@ dSamplerUniformLocation,
 specularSamplerUniformLocation,
 pixelOffsetUniformLocation,
 sceneSamplerUniformLocation,
+invNormalUniformLocation,
 blurSamplerUniformLocation,
 tex0Location,
 eartTextureID[4] = { 0 }, //0 = diffuse 1 = night 2 = specular 3 = displacement
@@ -236,7 +237,7 @@ void RenderFunction(void)
 	glActiveTexture(GL_TEXTURE1);
 	blur_buffer[1]->Bind();
 	glViewport(0, 0, CurrentWidth, CurrentHeight);
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT);
 	drawQuad();
 
 	glutSwapBuffers();
@@ -307,6 +308,7 @@ void CreateMesh(const char* filename)
 	gDispFactorUniformLocation = glGetUniformLocation(ShaderIds[0], "gDispFactor");
 	gDisplacementMapUniformLocation = glGetUniformLocation(ShaderIds[0], "gDisplacementMap");
 	mvMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvMatrix");
+	invNormalUniformLocation = glGetUniformLocation(ShaderIds[0], "invNormal");
 	
 
 	
@@ -596,16 +598,18 @@ void DrawCube(void)
 	glm::vec3 lDir(lightDir);
 	
 	glm::mat3 normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix*modMatrix));// TransposeInverse3x3ModelView(&ModelMatrix, &ViewMatrix);
+	glm::vec3 dispfactor = glm::vec3(0.01);
 
 	glUseProgram(ShaderIds[0]);
 	ExitOnGLError("ERROR: Could not use the shader program");
 
 	
 	glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &normalMatrix[0][0]);
+	glUniformMatrix3fv(invNormalUniformLocation, 1, GL_FALSE, &normalMatrix[0][0]);
 	glUniformMatrix4fv(mMatrixUniformLocation, 1, GL_FALSE, &modMatrix[0][0]);
 	glUniformMatrix4fv(mvMatrixUniformLocation, 1, GL_FALSE, &mv[0][0]);
-	glUniformMatrix4fv(gVPMatrixUniformLocation, 1, GL_FALSE, &vp[0][0]);
-	glUniform1f(gDispFactorUniformLocation, 0.01);
+	glUniformMatrix4fv(gVPMatrixUniformLocation, 1, GL_FALSE, &projMatrix[0][0]);
+	glUniform3fv(gDispFactorUniformLocation, 1, &dispfactor[0]);
 	glUniform1i(gDisplacementMapUniformLocation, 3);
 
 	glUniform3fv(lDirUniformLocation, 1, &lDir[0]);
@@ -775,7 +779,7 @@ void deleteQuad() {
 
 void drawQuad() {
 	glDisable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT);
 	glBindVertexArray(quadIds[0]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);

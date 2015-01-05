@@ -4,7 +4,7 @@ layout(triangles, equal_spacing, ccw) in;
                                                                                                 
 uniform mat4 gVP;                                                                               
 uniform sampler2D gDisplacementMap;                                                             
-uniform float gDispFactor;                                                                      
+uniform vec3 gDispFactor;
                                                                                                 
 
 in vec3 es_Normal[];
@@ -38,7 +38,7 @@ void main()
     vec3 position = interpolate3D(es_wPos[0], es_wPos[1], es_wPos[2]);    
                                                                                                 
     // Displace the vertex along the normal                                                     
-    float Displacement = texture(gDisplacementMap, ex_texCoord.xy).x;                        
+    float Displacement = 2*(texture(gDisplacementMap, ex_texCoord.xy).x-0.5);                        
     position += ex_Normal * Displacement * gDispFactor;                                
     gl_Position = gVP * vec4(position, 1.0);                                              
 }                                                                                               

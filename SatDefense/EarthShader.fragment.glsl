@@ -11,6 +11,7 @@ uniform vec3 lDir;
 uniform sampler2D texImage;
 uniform sampler2D nightImage;
 uniform sampler2D specImage;
+uniform mat3 invNormal;
 struct material
 {
 	vec4 ambient;
@@ -68,5 +69,5 @@ void main(void)
 	//out_Color = vec4(fresnelFactor*intensity);
 	out_Color.a = fresnelFactor*intensity;
 	out_specular = spec;
-	//out_Color = vec4(out_Color.a);
+	//out_Color = vec4(invNormal*vec3(texColor), 0);
 }
