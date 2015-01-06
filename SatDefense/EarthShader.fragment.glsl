@@ -11,7 +11,10 @@ uniform vec3 lDir;
 uniform sampler2D texImage;
 uniform sampler2D nightImage;
 uniform sampler2D specImage;
-uniform mat3 invNormal;
+uniform bool lighting;
+uniform bool night;
+uniform bool athmosphere;
+uniform bool specbloom;
 struct material
 {
 	vec4 ambient;
@@ -63,11 +66,37 @@ void main(void)
 	vec4 texColor = texture(texImage, vec2(ex_texCoord.s, ex_texCoord.t));
 	vec4 diffColor = intensity * mymaterial.diffuse * texColor;
 	
-
-	out_Color = max(diffColor + nightColor, nightColor)+spec;// nightColor);
+	if (!lighting) {
+		out_Color = texColor;
+		out_Color.a = 0;
+		out_specular = vec4(0);
+	}
+	else if (!night) {
+		out_Color = diffColor + spec;
+		out_Color.a = 0;
+		out_specular = vec4(0);
+	}
+	else if (!athmosphere) {
+		out_Color = max(diffColor + nightColor, nightColor) + spec;
+		out_Color.a = 0;
+		out_specular = vec4(0);
+	}
+	else if (!specbloom) {
+		out_Color = max(diffColor + nightColor, nightColor) + spec;
+		out_Color.a = fresnelFactor*intensity;
+		out_specular = vec4(0);
+	}
+	else {
+		out_Color = max(diffColor + nightColor, nightColor) + spec;
+		out_Color.a = fresnelFactor*intensity;
+		out_specular = spec;
+	}
+	//out_Color = max(diffColor + nightColor, nightColor)+spec;
+	
+	// nightColor);
 	//out_Color = vec4(spec);
 	//out_Color = vec4(fresnelFactor*intensity);
-	out_Color.a = fresnelFactor*intensity;
-	out_specular = spec;
+	//out_Color.a = fresnelFactor*intensity;
+	//out_specular = spec;
 	//out_Color = vec4(invNormal*vec3(texColor), 0);
 }

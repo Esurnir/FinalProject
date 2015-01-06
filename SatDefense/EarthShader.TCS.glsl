@@ -10,7 +10,8 @@ in vec3 cs_Normal[];//ex_Normal;
 in vec2 cs_texCoord[];// ex_texCoord;
 in vec3 cs_ex_eye[];// ex_eye;               
 in vec3 cs_wPos[];
-in float fresnelTFactor[];                                              
+in float fresnelTFactor[]; 
+uniform bool tess;
                                                                                                 
 // attributes of the output CPs      
 out vec3 es_Normal[];
@@ -46,19 +47,26 @@ void main()
 	normaldot[0] = dot(es_Normal[0], vec3(0, 0, 1));
 	normaldot[1] = dot(es_Normal[1], vec3(0, 0, 1));
 	normaldot[2] = dot(es_Normal[2], vec3(0, 0, 1));
-	if (normaldot[0] < 0 && normaldot[1] < 0 && normaldot[2]< 0) {
-		gl_TessLevelOuter[0] = 0;
-		gl_TessLevelOuter[1] = 0;
-		gl_TessLevelOuter[2] = 0;
-		gl_TessLevelInner[0] = 0;
+	if (tess){
+		if (normaldot[0] < 0 && normaldot[1] < 0 && normaldot[2] < 0) {
+			gl_TessLevelOuter[0] = 0;
+			gl_TessLevelOuter[1] = 0;
+			gl_TessLevelOuter[2] = 0;
+			gl_TessLevelInner[0] = 0;
+		}
+		else {
+			gl_TessLevelOuter[0] = ((fresnelTFactor[1] + fresnelTFactor[2]) / 2);
+			gl_TessLevelOuter[1] = ((fresnelTFactor[0] + fresnelTFactor[2]) / 2);
+			gl_TessLevelOuter[2] = ((fresnelTFactor[0] + fresnelTFactor[1]) / 2);
+			gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) / 3;
+		}
 	}
 	else {
-		gl_TessLevelOuter[0] = ((fresnelTFactor[1] + fresnelTFactor[2]) / 2);
-		gl_TessLevelOuter[1] = ((fresnelTFactor[0] + fresnelTFactor[2]) / 2);
-		gl_TessLevelOuter[2] = ((fresnelTFactor[0] + fresnelTFactor[1]) / 2);
-		gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) / 3;
+		gl_TessLevelOuter[0] = 1;
+		gl_TessLevelOuter[1] = 1;
+		gl_TessLevelOuter[2] = 1;
+		gl_TessLevelInner[0] = 1;
 	}
-	
 	
 	                         
                                                                                                 

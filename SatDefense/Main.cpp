@@ -33,6 +33,11 @@ pixelOffsetUniformLocation,
 sceneSamplerUniformLocation,
 invNormalUniformLocation,
 blurSamplerUniformLocation,
+lightingUniformLocation,
+nightUniformLocation,
+athmosphereUniformLocation,
+specbloomUniformLocation,
+tessUniformLocation,
 tex0Location,
 eartTextureID[4] = { 0 }, //0 = diffuse 1 = night 2 = specular 3 = displacement
 BufferIds[3] = { 0 }, //0 = VAO 1 = VBO 2 = VEB
@@ -41,7 +46,9 @@ ShaderIds[5] = { 0 },
 blurShaderIds[3] = { 0 },
 downSampleShaderIds[2] = { 0 },
 compositShaderIds[2] = { 0 };
-bool aamode = 1;
+bool aamode = true, wireframe = 0;
+
+int mode = 1;
 
 #define DOWNSAMPLE_BUFFERS 2
 #define BLUR_BUFFERS 2
@@ -71,6 +78,7 @@ void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail);
 void downSample(RenderTexture*, RenderTexture*, RenderTexture*);
 void initBlurShader();
 void blur(RenderTexture*, RenderTexture*, bool);
+void keyboard(unsigned char, int, int);
 
 void initFBOs();
 
@@ -118,6 +126,7 @@ void Initialize(int argc, char* argv[])
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 	ExitOnGLError("ERROR: Could not set OpenGL culling options");
+	
 	initFBOs();
 
 	CreateMesh("earth.obj");
@@ -154,6 +163,7 @@ void InitWindow(int argc, char* argv[])
 
 	glutReshapeFunc(ResizeFunction);
 	glutDisplayFunc(RenderFunction);
+	glutKeyboardFunc(keyboard);
 	glutIdleFunc(IdleFunction);
 	glutTimerFunc(0, TimerFunction, 0);
 	glutCloseFunc(DestroyCube);
@@ -309,6 +319,12 @@ void CreateMesh(const char* filename)
 	gDisplacementMapUniformLocation = glGetUniformLocation(ShaderIds[0], "gDisplacementMap");
 	mvMatrixUniformLocation = glGetUniformLocation(ShaderIds[0], "mvMatrix");
 	invNormalUniformLocation = glGetUniformLocation(ShaderIds[0], "invNormal");
+
+	lightingUniformLocation = glGetUniformLocation(ShaderIds[0], "lighting");
+	nightUniformLocation = glGetUniformLocation(ShaderIds[0], "night");
+	athmosphereUniformLocation = glGetUniformLocation(ShaderIds[0], "athmosphere");
+	specbloomUniformLocation = glGetUniformLocation(ShaderIds[0], "specbloom");
+	tessUniformLocation = glGetUniformLocation(ShaderIds[0], "tess");
 	
 
 	
@@ -612,6 +628,65 @@ void DrawCube(void)
 	glUniform3fv(gDispFactorUniformLocation, 1, &dispfactor[0]);
 	glUniform1i(gDisplacementMapUniformLocation, 3);
 
+	switch (mode) {
+	case 1:
+		glUniform1i(lightingUniformLocation, 0);
+		glUniform1i(nightUniformLocation, 0);
+		glUniform1i(athmosphereUniformLocation, 0);
+		glUniform1i(specbloomUniformLocation, 0);
+		glUniform1i(tessUniformLocation, 0);
+		break;
+	case 2:
+		glUniform1i(lightingUniformLocation,1);
+		glUniform1i(nightUniformLocation, 0);
+		glUniform1i(athmosphereUniformLocation, 0);
+		glUniform1i(specbloomUniformLocation, 0);
+		glUniform1i(tessUniformLocation, 0);
+		break;
+	case 3:
+		glUniform1i(lightingUniformLocation, 1);
+		glUniform1i(nightUniformLocation, 1);
+		glUniform1i(athmosphereUniformLocation, 0);
+		glUniform1i(specbloomUniformLocation, 0);
+		glUniform1i(tessUniformLocation, 0);
+		break;
+	case 4:
+		glUniform1i(lightingUniformLocation, 1);
+		glUniform1i(nightUniformLocation, 1);
+		glUniform1i(athmosphereUniformLocation, 1);
+		glUniform1i(specbloomUniformLocation, 0);
+		glUniform1i(tessUniformLocation, 0);
+		break;
+	case 5:
+		glUniform1i(lightingUniformLocation, 1);
+		glUniform1i(nightUniformLocation, 1);
+		glUniform1i(athmosphereUniformLocation, 1);
+		glUniform1i(specbloomUniformLocation, 1);
+		glUniform1i(tessUniformLocation, 0);
+		break;
+	case 6:
+		glUniform1i(lightingUniformLocation, 1);
+		glUniform1i(nightUniformLocation, 1);
+		glUniform1i(athmosphereUniformLocation, 1);
+		glUniform1i(specbloomUniformLocation, 1);
+		glUniform1i(tessUniformLocation, 1);
+		break;
+	default:
+		glUniform1i(lightingUniformLocation, 1);
+		glUniform1i(nightUniformLocation, 1);
+		glUniform1i(athmosphereUniformLocation, 1);
+		glUniform1i(specbloomUniformLocation, 1);
+		glUniform1i(tessUniformLocation, 1);
+		break;
+	}
+	switch (wireframe) {
+	case true:
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		break;
+	case false:
+		break;
+	}
+
 	glUniform3fv(lDirUniformLocation, 1, &lDir[0]);
 	glUniform1i(texImageLocation, 0);
 	glUniform1i(nightImageLocation, 1);
@@ -642,12 +717,14 @@ void DrawCube(void)
 	glBindVertexArray(0);
 	glUseProgram(0);
 	glDisable(GL_DEPTH_TEST);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 
 void initFBOs() {
+	destroyFBOs();
 	if (GLEW_EXT_framebuffer_blit && aamode) {
-		ms_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D, 4, 0);
+		ms_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D, 4, 16);
 		ms_buffer->InitColor_RB(0, GL_RGBA16F_ARB);
 		ms_buffer->InitColor_RB(1, GL_RGBA16F_ARB);
 		ms_buffer->InitDepth_RB();
@@ -684,22 +761,28 @@ void initFBOs() {
 void destroyFBOs() {
 	if (scene_buffer) {
 		delete scene_buffer;
+		scene_buffer = NULL;
 	}
-	for (int i = 0; i<DOWNSAMPLE_BUFFERS; i++) {
-		if (downsample_buffer[i])
+	for (int i = 0; i < DOWNSAMPLE_BUFFERS; i++) {
+		if (downsample_buffer[i]) {
 			delete downsample_buffer[i];
+			downsample_buffer[i] = NULL;
+		}
 	}
 	for (int i = 0; i<BLUR_BUFFERS; i++) {
-		if (blur_buffer[i])
+		if (blur_buffer[i]){
 			delete blur_buffer[i];
+			blur_buffer[i] = NULL;
+		}
 	}
 	if (ms_buffer) {
 		delete ms_buffer;
+		ms_buffer = NULL;
 	}
 }
 
 void initQuad() {
-	destroyFBOs();
+	
 	GLfloat quad[] = { -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0 }; //normalized trianglestrip
 	GLfloat uv[] = { 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0 }; //matching uv coordinate
 
@@ -911,4 +994,41 @@ void blur(RenderTexture* src, RenderTexture* dst,bool vertical) {
 	glUniform2fv(pixelOffsetUniformLocation,1,&offset[0]);
 	glUniform1i(tex0Location, 0);
 	drawQuad();
+}
+
+void keyboard(unsigned char key, int x, int y) {
+
+	switch (key) {
+	case 'q':
+	case 27:
+		exit(0);
+		break;
+	case '1': //no night
+		mode = 1;
+		break;
+	case '2': //night
+		mode = 2;
+		break;
+	case '3': //lighting
+		mode = 3;
+		break;
+	case '4': //bloom
+		mode = 4;
+		break;
+	case '5':
+		mode = 5;
+		break;
+	case '6':
+		mode = 6;
+		break;
+	case 'w':
+		wireframe = !wireframe;
+		break;
+	case 'a':
+		aamode = !aamode;
+		initFBOs();
+		break;
+
+	}
+
 }
