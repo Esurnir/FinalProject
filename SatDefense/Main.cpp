@@ -102,6 +102,23 @@ void renderSatelliteAlone();
 int main(int argc, char* argv[])
 {
 	Initialize(argc, argv);
+	printf("Commands:\nmode [1-6]\n"
+		"1: no lighting\n"
+		"2: Basic Lighting\n"
+		"3: Night Lights\n"
+		"4: Athmosphere\n"
+		"5: Specular Bloom\n"
+		"6: Tesselation\n"
+		"A: Anti Aliasing\n"
+		"S: Sattelite only\n"
+		"T: Texture RGB8/RGB16F\n"
+		"+-:change animation speed\n"
+		"R: reset\n"
+		"W: Wireframe toggle\n"
+		"Spacebar : start/stop animation\n"
+		"Q or Escape to quit\n"
+		"Arrow key : move camera\n"
+		"click and drag to rotate camera arround\n");
 
 	glutMainLoop();
 
