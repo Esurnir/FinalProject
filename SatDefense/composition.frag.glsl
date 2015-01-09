@@ -38,17 +38,19 @@ vec4 radial(sampler2D tex, vec2 texcoord, int samples, float startScale , float 
 
 void main(void)
 {
-	float blurAmount = 0.5;
-	float effectAmount = 1;
+	float blurAmount = 1;
+	float effectAmount = 1;//1;
 	vec4 scene = texture(sceneSampler,ex_teC);
 	vec4 blurred = texture(blurSampler,ex_teC);
 	vec4 effect = radial(blurSampler,ex_teC,30,1.0,0.95);
-	
+
+
 	vec4 c = scene + blurred;
 	
 	c+= effect*effectAmount;
 	
 	out_colour = c;
+	//out_colour = spec;
 }
 
 

@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "RenderTextureFBO.h"
 #include <iostream>
+#include "RenderObject.h"
 
 #define WINDOW_TITLE_PREFIX "Sattelite Defense"
 
@@ -45,8 +46,20 @@ quadIds[6] = { 0 },
 ShaderIds[5] = { 0 },
 blurShaderIds[3] = { 0 },
 downSampleShaderIds[2] = { 0 },
-compositShaderIds[2] = { 0 };
-bool aamode = true, wireframe = 0;
+compositShaderIds[2] = { 0 },
+satShaderIds[3] = { 0 },
+satBufferIds[3] = { 0 };
+bool aamode = true, texture = true, animate = true, wireframe = 0,satOnly = false;
+GLfloat speed = 0.5, anglex= 0, angley = 0,translatez = -2.5;
+glm::mat4 viewMatrix;
+glm::mat4 projMatrix;
+glm::vec3 lDir;
+int old_x = 0;
+int old_y = 0;
+int valid = 0;
+float CubeAngle;
+
+RenderObject * satellite;
 
 int mode = 1;
 
@@ -74,13 +87,17 @@ void initQuad();
 void drawQuad();
 void destroyQuad();
 void destroyFBOs();
-void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail);
 void downSample(RenderTexture*, RenderTexture*, RenderTexture*);
 void initBlurShader();
 void blur(RenderTexture*, RenderTexture*, bool);
 void keyboard(unsigned char, int, int);
-
+void special(int, int, int);
+void mouse_func(int button, int state, int x, int y);
+void motion_func(int, int);
+void initSatellite();
 void initFBOs();
+void renderSatellite();
+void renderSatelliteAlone();
 
 int main(int argc, char* argv[])
 {
@@ -132,6 +149,7 @@ void Initialize(int argc, char* argv[])
 	CreateMesh("earth.obj");
 	initQuad();
 	initBlurShader();
+	initSatellite();
 }
 
 void InitWindow(int argc, char* argv[])
@@ -164,6 +182,9 @@ void InitWindow(int argc, char* argv[])
 	glutReshapeFunc(ResizeFunction);
 	glutDisplayFunc(RenderFunction);
 	glutKeyboardFunc(keyboard);
+	glutSpecialFunc(special);
+	glutMouseFunc(mouse_func);
+	glutMotionFunc(motion_func);
 	glutIdleFunc(IdleFunction);
 	glutTimerFunc(0, TimerFunction, 0);
 	glutCloseFunc(DestroyCube);
@@ -197,10 +218,15 @@ void RenderFunction(void)
 	glDrawBuffers(2, buffers);
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	DrawCube();
-	ExitOnGLError("ERROR: Problem after exiting cube");
-	
+	if (!satOnly) {
+		DrawCube();
+		ExitOnGLError("ERROR: Problem after exiting cube");
+		renderSatellite();
+		ExitOnGLError("ERROR: Problem after exiting satellite");
+	}
+	else {
+		renderSatelliteAlone();
+	}
 	if (aamode) {
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, scene_buffer->GetFramebuffer());
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -246,6 +272,7 @@ void RenderFunction(void)
 	ExitOnGLError("Could not bind scene texture");
 	glActiveTexture(GL_TEXTURE1);
 	blur_buffer[1]->Bind();
+
 	glViewport(0, 0, CurrentWidth, CurrentHeight);
 	//glClear(GL_COLOR_BUFFER_BIT);
 	drawQuad();
@@ -589,29 +616,34 @@ void DestroyCube()
 
 	destroyFBOs();
 	ExitOnGLError("ERROR: Could not destroy the FBOs");
+	if (satellite) {
+		delete satellite;
+		satellite = NULL;
+	}
 }
 
 void DrawCube(void)
 {
 	glEnable(GL_DEPTH_TEST);
-	float CubeAngle;
 	clock_t Now = clock();
 
 	if (LastTime == 0)
 		LastTime = Now;
 
-	CubeRotation += 45.0f * ((float)(Now - LastTime) / CLOCKS_PER_SEC);
+	CubeRotation += animate ? 45.0f * ((float)(Now - LastTime) / CLOCKS_PER_SEC)*speed : 0;
 	CubeAngle = DegreesToRadians(CubeRotation);
 	LastTime = Now;
 	glm::mat4 modMatrix = glm::rotate(glm::mat4(), CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.5f));
-	//viewMatrix = glm::rotate(viewMatrix, (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f));
-	glm::mat4 projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 10.0f);
+	viewMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, translatez));
+
+	viewMatrix = glm::rotate(viewMatrix, angley, glm::vec3(1.0f, 0.0f, 0.0f));
+	viewMatrix = glm::rotate(viewMatrix, anglex, glm::vec3(0.0f, 1.0f, 0.0f));
+	projMatrix = glm::perspective((float)(60*PI/180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 10.0f);
 	glm::mat4 vp = projMatrix*viewMatrix;
 	glm::mat4 mv = viewMatrix*modMatrix;
-	glm::vec4 lightDir(1.0f, 0.0f, 0.0f,0.0f);
-	lightDir = glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), CubeAngle/(float)1.5, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
-	glm::vec3 lDir(lightDir);
+	glm::vec4 lightDir = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	lightDir = viewMatrix*glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), CubeAngle / (float)1.5, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
+	lDir = glm::vec3(lightDir);
 	
 	glm::mat3 normalMatrix = glm::inverseTranspose(glm::mat3(viewMatrix*modMatrix));// TransposeInverse3x3ModelView(&ModelMatrix, &ViewMatrix);
 	glm::vec3 dispfactor = glm::vec3(0.01);
@@ -722,18 +754,19 @@ void DrawCube(void)
 
 
 void initFBOs() {
+	GLenum format = texture ? GL_RGBA16F_ARB : GL_RGBA8;
 	destroyFBOs();
 	if (GLEW_EXT_framebuffer_blit && aamode) {
 		ms_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D, 4, 16);
-		ms_buffer->InitColor_RB(0, GL_RGBA16F_ARB);
-		ms_buffer->InitColor_RB(1, GL_RGBA16F_ARB);
+		ms_buffer->InitColor_RB(0, format);
+		ms_buffer->InitColor_RB(1, format);
 		ms_buffer->InitDepth_RB();
 	}
 	scene_buffer = new RenderTexture(CurrentWidth, CurrentHeight, GL_TEXTURE_2D);
-	scene_buffer->InitColor_Tex(0, GL_RGBA16F_ARB);
+	scene_buffer->InitColor_Tex(0, format);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	scene_buffer->InitColor_Tex(1, GL_RGBA16F_ARB);
+	scene_buffer->InitColor_Tex(1, format);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	scene_buffer->InitDepth_RB();
@@ -744,7 +777,7 @@ void initFBOs() {
 		w /= 2;
 		h /= 2;
 		downsample_buffer[i] = new RenderTexture(w, h, GL_TEXTURE_2D);
-		downsample_buffer[i]->InitColor_Tex(0, GL_RGBA16F_ARB);
+		downsample_buffer[i]->InitColor_Tex(0, format);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	}
@@ -752,7 +785,7 @@ void initFBOs() {
 	// blur pbuffers
 	for (int i = 0; i<BLUR_BUFFERS; i++) {
 		blur_buffer[i] = new RenderTexture(CurrentWidth / 4, CurrentHeight / 4, GL_TEXTURE_2D);
-		blur_buffer[i]->InitColor_Tex(0, GL_RGBA16F_ARB);
+		blur_buffer[i]->InitColor_Tex(0, format);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	}
@@ -868,49 +901,13 @@ void drawQuad() {
 	glBindVertexArray(0);
 }
 
-void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
-{
-	//Check if something is wrong with the shader
-	switch (type) {
-	case(GL_COMPILE_STATUS) :
-		glGetShaderiv(id, type, ret);
-		if (*ret == false){
-			int infologLength = 0;
-			glGetShaderiv(id, GL_INFO_LOG_LENGTH, &infologLength);
-			GLchar* buffer = new GLchar[infologLength];
-			GLsizei charsWritten = 0;
-			std::cout << onfail << std::endl;
-			glGetShaderInfoLog(id, infologLength, &charsWritten, buffer);
-			std::cout << buffer << std::endl;
-			delete[] buffer;
-		}
-		break;
-	case(GL_LINK_STATUS) :
-		glGetProgramiv(id, type, ret);
-		if (*ret == false){
-			int infologLength = 0;
-			glGetProgramiv(id, GL_INFO_LOG_LENGTH, &infologLength);
-			GLchar* buffer2 = new GLchar[infologLength];
-			GLsizei charsWritten = 0;
-			std::cout << onfail << std::endl;
-			glGetProgramInfoLog(id, infologLength, &charsWritten, buffer2);
-			std::cout << buffer2 << std::endl;
-			delete[] buffer2;
-		}
-		break;
-	default:
-		break;
-	};
-}
+
 
 void downSample(RenderTexture* src, RenderTexture* dst,RenderTexture* tmp) {
 	
-	glUseProgram(downSampleShaderIds[0]);
+	glUseProgram(quadIds[3]);
 	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(dSamplerUniformLocation, 0);
-	glUniform1i(specularSamplerUniformLocation, 1);
-	src->Bind();
-	glActiveTexture(GL_TEXTURE1);
+	glUniform1i(ptSamplerUniformLocation, 0);
 	src->Bind(1);
 	tmp->Activate();
 	glViewport(0, 0, CurrentWidth / 2, CurrentHeight / 2);
@@ -1028,7 +1025,149 @@ void keyboard(unsigned char key, int x, int y) {
 		aamode = !aamode;
 		initFBOs();
 		break;
-
+	case 't':
+		texture = !texture;
+		initFBOs();
+		break;
+	case 's':
+		satOnly = !satOnly;
+		break;
+	case ' ':
+		animate = !animate;
+		break;
+	case '-':
+		speed = speed < 0.2 ? 0.1 : speed - 0.1;
+		break;
+	case '+':
+		speed = speed > 2.9 ? 3.0 : speed + 0.1;
+		break;
+	case 'r':
+		speed = 1.0;
+		anglex = 0.0;
+		angley = 0.0;
+		translatez = -2.5;
+		break;
 	}
 
+}
+
+
+
+void special(int key, int x, int y) {
+	switch (key) {
+	case GLUT_KEY_UP:
+		translatez += translatez >-0.2 ? 0.0: 0.1;
+		break;
+	case GLUT_KEY_DOWN:
+		translatez -= 0.1;
+		break;
+	case GLUT_KEY_LEFT:
+		anglex -= 0.0872664626;
+		break;
+	case GLUT_KEY_RIGHT:
+		anglex += 0.0872664626;
+		break;
+	}
+}
+
+
+
+void mouse_func(int button, int state, int x, int y) {
+	old_x = x;
+	old_y = y;
+	valid = state == GLUT_DOWN;
+}
+
+void motion_func(int x, int y) {
+	if (valid) {
+		int dx = old_x - x;
+		int dy = old_y - y;
+		anglex += 0.00872664626*dx;
+		angley += 0.00872664626*dy;
+	}
+	old_x = x;
+	old_y = y;
+}
+
+void initSatellite() {
+	satellite = new RenderObject();
+	satellite->loadMesh("carver.obj");
+	satellite->loadTexture("carver.dds");
+	satellite->loadTexture("carver-spec.dds");
+	satellite->loadProgram("carver.vertex.glsl", "carver.fragment.glsl");
+}
+
+void renderSatellite() {
+	glEnable(GL_DEPTH_TEST);
+	satellite->activateProgram();
+	satellite->bindTexture(0, 0);
+	satellite->bindTexture(1, 1);
+	switch (wireframe) {
+	case true:
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		break;
+	case false:
+		break;
+	}
+	glm::mat4 modMatrix = glm::mat4(); // glm::rotate(glm::mat4(), CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+	modMatrix = glm::rotate(modMatrix, (float)(PI / 4), glm::vec3(0.0f, 1.0f, 0.0f));
+	modMatrix = glm::rotate(modMatrix, CubeAngle/2, glm::vec3(1.0f, 0.0f, 0.0f));
+	modMatrix = glm::translate(modMatrix, glm::vec3(0.0f, 0.0f, 1.3f));
+	//modMatrix = glm::rotate(modMatrix, (float)(PI / 4), glm::vec3(0.0f, 1.0f, 0.0f));
+	modMatrix = glm::rotate(modMatrix, (float)(PI / 2), glm::vec3(1.0f, 0.0f, 0.0f));
+	
+	modMatrix = glm::scale(modMatrix, glm::vec3(0.1f));
+	glm::mat4 mv = viewMatrix*modMatrix;
+	glm::mat4 mvp = projMatrix*viewMatrix*modMatrix;
+	glm::mat3 norm = glm::inverseTranspose(glm::mat3(mv));
+
+	satellite->setUniform3fv("lDir",&lDir[0]);
+	satellite->setUniform1i("texImage",0);
+	satellite->setUniform1i("specImage",1);
+	satellite->setUniform1i("specbloom", mode == 5 || mode == 6);
+	satellite->setUniformMatrix4fv("mvpMatrix", &mvp[0][0]);
+	satellite->setUniformMatrix4fv("mvMatrix", &mv[0][0]);
+	satellite->setUniformMatrix3fv("normalMatrix", &norm[0][0]);
+	satellite->render();
+	glUseProgram(0);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDisable(GL_DEPTH_TEST);
+}
+
+void renderSatelliteAlone() {
+	glEnable(GL_DEPTH_TEST);
+	satellite->activateProgram();
+	satellite->bindTexture(0, 0);
+	satellite->bindTexture(1, 1);
+	switch (wireframe) {
+	case true:
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		break;
+	case false:
+		break;
+	}
+	glm::mat4 modMatrix = glm::mat4(); // glm::rotate(glm::mat4(), CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 vMatrix = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, translatez));
+
+	vMatrix = glm::rotate(vMatrix, angley, glm::vec3(1.0f, 0.0f, 0.0f));
+	vMatrix = glm::rotate(vMatrix, anglex, glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 pMatrix = glm::perspective((float)(60 * PI / 180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 10.0f);
+	glm::vec4 lightDir = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	lightDir = viewMatrix*glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
+	glm::vec3 lir = glm::vec3(lightDir);
+	glm::mat4 mv = vMatrix*modMatrix;
+	glm::mat4 mvp = pMatrix*vMatrix*modMatrix;
+	glm::mat3 norm = glm::inverseTranspose(glm::mat3(mv));
+
+	satellite->setUniform3fv("lDir", &lir[0]);
+	satellite->setUniform1i("texImage", 0);
+	satellite->setUniform1i("specImage", 1);
+	satellite->setUniform1i("specbloom", mode == 5 || mode == 6);
+	satellite->setUniformMatrix4fv("mvpMatrix", &mvp[0][0]);
+	satellite->setUniformMatrix4fv("mvMatrix", &mv[0][0]);
+	satellite->setUniformMatrix3fv("normalMatrix", &norm[0][0]);
+	satellite->render();
+	glUseProgram(0);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glDisable(GL_DEPTH_TEST);
 }

@@ -32,6 +32,7 @@ vec4 fresnelColour = vec4(0.3, 0.3, 1.0, 1.0);
 
 void main(void)
 {
+	if (dot(ex_eye, ex_Normal) < 0) discard;
 	// set the specular term to black
 	vec4 spec = vec4(0.0);
 	vec4 nightColor = vec4(0.0);
@@ -83,15 +84,15 @@ void main(void)
 	}
 	else if (!specbloom) {
 		out_Color = max(diffColor + nightColor, nightColor) + spec;
-		out_Color.a = fresnelFactor*intensity;
-		out_specular = vec4(0);
+		out_Color.a = 0;
+		out_specular = vec4(0.5, 0.5, 1.5, 1)*fresnelFactor*intensity;
 	}
 	else {
 		out_Color = max(diffColor + nightColor, nightColor) + spec;
-		out_Color.a = fresnelFactor*intensity;
-		out_specular = spec;
+		//out_Color.a = fresnelFactor*intensity;
+		out_specular = spec + vec4(0.5, 0.5, 1.5,1)*fresnelFactor*intensity;
 	}
-	//out_Color = max(diffColor + nightColor, nightColor)+spec;
+	//out_Color = vec4(1, 1, 1, 0)*dot(ex_eye, ex_Normal);
 	
 	// nightColor);
 	//out_Color = vec4(spec);

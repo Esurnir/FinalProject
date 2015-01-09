@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include <iostream>
 
 const Matrix IDENTITY_MATRIX = { {
 	1, 0, 0, 0,
@@ -192,4 +193,92 @@ glm::mat3 TransposeInverse3x3ModelView(const Matrix* model, const Matrix* view) 
 	glm::mat3 gl_NormalMatrix = glm::inverseTranspose(glm::mat3(gl_ModelViewMatrix));
 	return gl_NormalMatrix;
 
+}
+
+GLuint loadDDSTexture(char * filename, bool anisotropic) {
+	gli::texture2D Texture(gli::load_dds(filename));
+	if (Texture.empty())  {
+		printf("Error loading earth.dds\n");
+		exit(EXIT_FAILURE);
+	}
+
+	GLuint texID;
+	glGenTextures(1, &texID);
+	float aniso = 0.0f;
+	if (GLEW_EXT_texture_filter_anisotropic && anisotropic) glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+	glBindTexture(GL_TEXTURE_2D, texID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, GLint(Texture.levels() - 1));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if (GLEW_EXT_texture_filter_anisotropic && anisotropic) glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
+	glTexStorage2D(GL_TEXTURE_2D,
+		GLint(Texture.levels()),
+		GLenum(gli::internal_format(Texture.format())),
+		GLsizei(Texture.dimensions().x),
+		GLsizei(Texture.dimensions().y));
+	if (gli::is_compressed(Texture.format()))
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glCompressedTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::internal_format(Texture.format())),
+				GLsizei(Texture[Level].size()),
+				Texture[Level].data());
+		}
+	}
+	else
+	{
+		for (gli::texture2D::size_type Level = 0; Level < Texture.levels(); ++Level)
+		{
+			glTexSubImage2D(GL_TEXTURE_2D,
+				GLint(Level),
+				0, 0,
+				GLsizei(Texture[Level].dimensions().x),
+				GLsizei(Texture[Level].dimensions().y),
+				GLenum(gli::external_format(Texture.format())),
+				GLenum(gli::type_format(Texture.format())),
+				Texture[Level].data());
+		}
+	}
+	return texID;
+}
+
+void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail)
+{
+	//Check if something is wrong with the shader
+	switch (type) {
+	case(GL_COMPILE_STATUS) :
+		glGetShaderiv(id, type, ret);
+		if (*ret == false){
+			int infologLength = 0;
+			glGetShaderiv(id, GL_INFO_LOG_LENGTH, &infologLength);
+			GLchar* buffer = new GLchar[infologLength];
+			GLsizei charsWritten = 0;
+			std::cout << onfail << std::endl;
+			glGetShaderInfoLog(id, infologLength, &charsWritten, buffer);
+			std::cout << buffer << std::endl;
+			delete[] buffer;
+		}
+		break;
+	case(GL_LINK_STATUS) :
+		glGetProgramiv(id, type, ret);
+		if (*ret == false){
+			int infologLength = 0;
+			glGetProgramiv(id, GL_INFO_LOG_LENGTH, &infologLength);
+			GLchar* buffer2 = new GLchar[infologLength];
+			GLsizei charsWritten = 0;
+			std::cout << onfail << std::endl;
+			glGetProgramInfoLog(id, infologLength, &charsWritten, buffer2);
+			std::cout << buffer2 << std::endl;
+			delete[] buffer2;
+		}
+		break;
+	default:
+		break;
+	};
 }

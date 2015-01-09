@@ -11,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <gli/gli.hpp>
 
 static const double PI = 3.14159265358979323846;
 
@@ -42,5 +43,7 @@ float RadiansToDegrees(float radians);
 
 void ExitOnGLError(const char* error_message);
 GLuint LoadShader(const char* filename, GLenum shader_type);
+GLuint loadDDSTexture(char * filename, bool anisotropic);
+void CheckShader(GLuint id, GLuint type, GLint *ret, const char *onfail);
 
 #endif

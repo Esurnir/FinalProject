@@ -60,6 +60,10 @@ void main()
 			gl_TessLevelOuter[2] = ((fresnelTFactor[0] + fresnelTFactor[1]) / 2);
 			gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) / 3;
 		}
+		//gl_TessLevelOuter[0] = normaldot[1] < 0 || normaldot[2] < 0 ? 0 : gl_TessLevelOuter[0];
+		//gl_TessLevelOuter[1] = normaldot[0] < 0 || normaldot[2] < 0 ? 0 : gl_TessLevelOuter[0];
+		//gl_TessLevelOuter[2] = normaldot[1] < 0 || normaldot[0] < 0 ? 0 : gl_TessLevelOuter[0];
+
 	}
 	else {
 		gl_TessLevelOuter[0] = 1;

@@ -27,11 +27,7 @@ void main(void)
 	vec3 test = NormalInvMatrix*in_Normal;
 	cs_Normal = normalize(test);
 	cs_ex_eye = normalize(vec3(-(mvMatrix*p)));
-	float Bias = 0.0;
-	float Scale = 0.2;
-	float Pow = 0.5;
-	fresnelTFactor = 10 * pow(1 - abs(dot(-cs_ex_eye, cs_Normal)), 1.5);
-	fresnelTFactor = fresnelTFactor;
+	fresnelTFactor = 0.5+2.5*pow((1 - abs(dot(-cs_ex_eye, cs_Normal))),2); //5 * pow(1 - abs(dot(-cs_ex_eye, cs_Normal)), 1.5);
 	cs_texCoord = in_texCoord;
 	cs_wPos = vec3(mvMatrix * p);
 }
