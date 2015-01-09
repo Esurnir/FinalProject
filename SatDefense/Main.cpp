@@ -60,6 +60,7 @@ int valid = 0;
 float CubeAngle;
 
 RenderObject * satellite;
+RenderObject * sat1, * sat2;
 
 int mode = 1;
 
@@ -115,6 +116,7 @@ int main(int argc, char* argv[])
 		"+-:change animation speed\n"
 		"R: reset\n"
 		"W: Wireframe toggle\n"
+		"C: Swap sattelite model\n"
 		"Spacebar : start/stop animation\n"
 		"Q or Escape to quit\n"
 		"Arrow key : move camera\n"
@@ -633,10 +635,15 @@ void DestroyCube()
 
 	destroyFBOs();
 	ExitOnGLError("ERROR: Could not destroy the FBOs");
-	if (satellite) {
+	if (sat1) {
 		delete satellite;
 		satellite = NULL;
 	}
+	if (sat2) {
+		delete sat2;
+		sat2 = NULL;
+	}
+	satellite = NULL;
 }
 
 void DrawCube(void)
@@ -1064,6 +1071,13 @@ void keyboard(unsigned char key, int x, int y) {
 		angley = 0.0;
 		translatez = -2.5;
 		break;
+	case 'c':
+		if (satellite == sat1) {
+			satellite = sat2;
+		}
+		else {
+			satellite = sat1;
+		}
 	}
 
 }
@@ -1108,10 +1122,17 @@ void motion_func(int x, int y) {
 
 void initSatellite() {
 	satellite = new RenderObject();
-	satellite->loadMesh("carver.obj");
+	satellite->loadMesh("solar.obj");
 	satellite->loadTexture("carver.dds");
 	satellite->loadTexture("carver-spec.dds");
 	satellite->loadProgram("carver.vertex.glsl", "carver.fragment.glsl");
+	sat1 = satellite;
+	sat2 = new RenderObject();
+	sat2->loadMesh("carver.obj");
+	sat2->loadTexture("carver.dds");
+	sat2->loadTexture("carver-spec.dds");
+	sat2->loadProgram("carver.vertex.glsl", "carver.fragment.glsl");
+
 }
 
 void renderSatellite() {
@@ -1170,8 +1191,8 @@ void renderSatelliteAlone() {
 	vMatrix = glm::rotate(vMatrix, angley, glm::vec3(1.0f, 0.0f, 0.0f));
 	vMatrix = glm::rotate(vMatrix, anglex, glm::vec3(0.0f, 1.0f, 0.0f));
 	glm::mat4 pMatrix = glm::perspective((float)(60 * PI / 180), ((float)CurrentWidth) / ((float)CurrentHeight), 1.0f, 10.0f);
-	glm::vec4 lightDir = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	lightDir = viewMatrix*glm::rotate(glm::rotate(glm::mat4(), (float)(-23.4f*PI / 180.0f), glm::vec3(0.0, 0.0, 1.0f)), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f))*lightDir;
+	glm::vec4 lightDir = glm::vec4(-1.0f, 0.5f, 0.0f, 0.0f);
+	lightDir = viewMatrix*lightDir;
 	glm::vec3 lir = glm::vec3(lightDir);
 	glm::mat4 mv = vMatrix*modMatrix;
 	glm::mat4 mvp = pMatrix*vMatrix*modMatrix;

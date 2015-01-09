@@ -47,6 +47,7 @@
     <Text Include="carver.obj" />
     <Text Include="EarthShader.fragment.glsl" />
     <Text Include="EarthShader.vertex.glsl" />
+    <Text Include="solar.obj" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="carver.dds" />
