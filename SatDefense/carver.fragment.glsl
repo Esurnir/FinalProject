@@ -11,6 +11,8 @@ uniform vec3 lDir;
 uniform sampler2D texImage;
 uniform sampler2D specImage;
 uniform bool specbloom;
+uniform bool lighting;
+
 struct material
 {
 	vec4 ambient;
@@ -44,14 +46,14 @@ void main(void)
 	// compute the specular term into spec
 	float intSpec = max(dot(h, n), 0.0);
 	float specfactor = pow(intSpec, mymaterial.shininess);
-	spec = vec4(texture(specImage, ex_TexCoord).rgb*texture(specImage, ex_TexCoord).a * specfactor,1);
+	spec = vec4(texture(specImage, ex_TexCoord).rgb * specfactor,1);
 
 
 	vec4 texColor = texture(texImage, ex_TexCoord);
 	vec4 diffColor = intensity * mymaterial.diffuse * texColor;
 	vec4 ambientColor = mymaterial.ambient * texColor;
 	
-	out_Color = max(diffColor , ambientColor) + spec;
-	out_specular = specbloom ? spec:vec4(0);
+	out_Color = lighting? max(diffColor , ambientColor) + spec : texColor;
+	out_specular = (specbloom && lighting ? spec:vec4(0));
 
 }

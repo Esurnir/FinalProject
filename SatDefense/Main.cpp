@@ -1127,8 +1127,8 @@ void renderSatellite() {
 		break;
 	}
 	glm::mat4 modMatrix = glm::mat4(); // glm::rotate(glm::mat4(), CubeAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-	modMatrix = glm::rotate(modMatrix, (float)(PI / 4), glm::vec3(0.0f, 1.0f, 0.0f));
-	modMatrix = glm::rotate(modMatrix, CubeAngle/2, glm::vec3(1.0f, 0.0f, 0.0f));
+	modMatrix = glm::rotate(modMatrix, (float)(PI / 3), glm::vec3(0.0f, 1.0f, 0.0f));
+	modMatrix = glm::rotate(modMatrix, CubeAngle*2, glm::vec3(1.0f, 0.0f, 0.0f));
 	modMatrix = glm::translate(modMatrix, glm::vec3(0.0f, 0.0f, 1.3f));
 	//modMatrix = glm::rotate(modMatrix, (float)(PI / 4), glm::vec3(0.0f, 1.0f, 0.0f));
 	modMatrix = glm::rotate(modMatrix, (float)(PI / 2), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -1142,6 +1142,7 @@ void renderSatellite() {
 	satellite->setUniform1i("texImage",0);
 	satellite->setUniform1i("specImage",1);
 	satellite->setUniform1i("specbloom", mode == 5 || mode == 6);
+	satellite->setUniform1i("lighting", !(mode == 1));
 	satellite->setUniformMatrix4fv("mvpMatrix", &mvp[0][0]);
 	satellite->setUniformMatrix4fv("mvMatrix", &mv[0][0]);
 	satellite->setUniformMatrix3fv("normalMatrix", &norm[0][0]);
@@ -1179,6 +1180,7 @@ void renderSatelliteAlone() {
 	satellite->setUniform3fv("lDir", &lir[0]);
 	satellite->setUniform1i("texImage", 0);
 	satellite->setUniform1i("specImage", 1);
+	satellite->setUniform1i("lighting", !(mode == 1));
 	satellite->setUniform1i("specbloom", mode == 5 || mode == 6);
 	satellite->setUniformMatrix4fv("mvpMatrix", &mvp[0][0]);
 	satellite->setUniformMatrix4fv("mvMatrix", &mv[0][0]);
