@@ -13,6 +13,15 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Mesh">
+      <UniqueIdentifier>{75f40a45-7bdc-4e83-bf72-91bf8326d511}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Textures">
+      <UniqueIdentifier>{c6bc83f2-8c17-4b09-906d-b339cceb094a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{25c2062c-f564-41b9-9ce7-4edb8447d6ee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="utils.cpp">
@@ -43,33 +52,71 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="earth.obj" />
-    <Text Include="carver.obj" />
-    <Text Include="EarthShader.fragment.glsl" />
-    <Text Include="EarthShader.vertex.glsl" />
-    <Text Include="solar.obj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="carver.dds" />
-    <Image Include="earth-medium.dds" />
-    <Image Include="spec.dds" />
-    <Image Include="earth.dds" />
-    <Image Include="night.dds" />
-    <Image Include="Displacement.dds" />
-    <Image Include="test.dds" />
-    <Image Include="carver-spec.dds" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="freeglut.dll" />
     <None Include="glew32.dll" />
-    <None Include="passthrough.frag.glsl" />
-    <None Include="passthrough.vert.glsl" />
-    <None Include="blur.frag.glsl" />
-    <None Include="alphaMultiply.frag.glsl" />
-    <None Include="composition.frag.glsl" />
-    <None Include="EarthShader.TCS.glsl" />
-    <None Include="EarthShader.TES.glsl" />
-    <None Include="carver.vertex.glsl" />
-    <None Include="carver.fragment.glsl" />
+    <None Include="Shaders\alphaMultiply.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\blur.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\carver.fragment.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\carver.vertex.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\composition.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\EarthShader.fragment.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\EarthShader.TCS.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\EarthShader.TES.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\EarthShader.vertex.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\passthrough.frag.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\passthrough.vert.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Textures\carver.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\carver-spec.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\Displacement.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\earth-medium.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\night.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\spec.dds">
+      <Filter>Textures</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Mesh\carver.obj">
+      <Filter>Mesh</Filter>
+    </Text>
+    <Text Include="Mesh\earth.obj">
+      <Filter>Mesh</Filter>
+    </Text>
+    <Text Include="Mesh\solar.obj">
+      <Filter>Mesh</Filter>
+    </Text>
   </ItemGroup>
 </Project>

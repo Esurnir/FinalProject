@@ -165,7 +165,7 @@ void Initialize(int argc, char* argv[])
 	
 	initFBOs();
 
-	CreateMesh("earth.obj");
+	CreateMesh("Mesh\\earth.obj");
 	initQuad();
 	initBlurShader();
 	initSatellite();
@@ -334,10 +334,10 @@ void CreateMesh(const char* filename)
 	ShaderIds[0] = glCreateProgram();
 	ExitOnGLError("ERROR: Could not create the shader program");
 	{
-		ShaderIds[1] = LoadShader("EarthShader.fragment.glsl", GL_FRAGMENT_SHADER);
-		ShaderIds[2] = LoadShader("EarthShader.vertex.glsl", GL_VERTEX_SHADER);
-		ShaderIds[3] = LoadShader("EarthShader.TCS.glsl", GL_TESS_CONTROL_SHADER);
-		ShaderIds[4] = LoadShader("EarthShader.TES.glsl", GL_TESS_EVALUATION_SHADER);
+		ShaderIds[1] = LoadShader("Shaders\\EarthShader.fragment.glsl", GL_FRAGMENT_SHADER);
+		ShaderIds[2] = LoadShader("Shaders\\EarthShader.vertex.glsl", GL_VERTEX_SHADER);
+		ShaderIds[3] = LoadShader("Shaders\\EarthShader.TCS.glsl", GL_TESS_CONTROL_SHADER);
+		ShaderIds[4] = LoadShader("Shaders\\EarthShader.TES.glsl", GL_TESS_EVALUATION_SHADER);
 		glAttachShader(ShaderIds[0], ShaderIds[1]);
 		glAttachShader(ShaderIds[0], ShaderIds[2]);
 		glAttachShader(ShaderIds[0], ShaderIds[3]);
@@ -432,7 +432,7 @@ void CreateMesh(const char* filename)
 	float aniso = 0.0f;
 	if (GLEW_EXT_texture_filter_anisotropic) glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
 	
-	gli::texture2D Texture(gli::load_dds("earth-medium.dds"));
+	gli::texture2D Texture(gli::load_dds("Textures\\earth-medium.dds"));
 	if (Texture.empty())  {
 		printf("Error loading earth.dds\n");
 		exit(EXIT_FAILURE);
@@ -478,7 +478,7 @@ void CreateMesh(const char* filename)
 	}
 
 
-	Texture = gli::texture2D(gli::load_dds("night.dds"));
+	Texture = gli::texture2D(gli::load_dds("Textures/night.dds"));
 
 	if (Texture.empty())  {
 		printf("Error loading night.dds\n");
@@ -524,7 +524,7 @@ void CreateMesh(const char* filename)
 		}
 	}
 
-	Texture = gli::texture2D(gli::load_dds("spec.dds"));
+	Texture = gli::texture2D(gli::load_dds("Textures\\spec.dds"));
 
 	if (Texture.empty())  {
 		printf("Error loading spec.dds\n");
@@ -570,7 +570,7 @@ void CreateMesh(const char* filename)
 		}
 	}
 
-	Texture = gli::texture2D(gli::load_dds("displacement.dds"));
+	Texture = gli::texture2D(gli::load_dds("Textures\\displacement.dds"));
 
 	if (Texture.empty())  {
 		printf("Error loading displacement.dds\n");
@@ -870,8 +870,8 @@ void initQuad() {
 	quadIds[3] = glCreateProgram();
 	ExitOnGLError("ERROR: Could not create the shader program");
 	{
-		quadIds[4] = LoadShader("passthrough.frag.glsl", GL_FRAGMENT_SHADER);
-		quadIds[5] = LoadShader("passthrough.vert.glsl", GL_VERTEX_SHADER);
+		quadIds[4] = LoadShader("Shaders\\passthrough.frag.glsl", GL_FRAGMENT_SHADER);
+		quadIds[5] = LoadShader("Shaders\\passthrough.vert.glsl", GL_VERTEX_SHADER);
 
 		GLint ret;
 		CheckShader(quadIds[5], GL_COMPILE_STATUS, &ret, "unable to compile the vertex shader!");
@@ -956,10 +956,10 @@ void initBlurShader() {
 	compositShaderIds[0] = glCreateProgram();
 	ExitOnGLError("ERROR: Could not create the shader program");
 	{
-		blurShaderIds[1] = LoadShader("passthrough.vert.glsl", GL_VERTEX_SHADER);
-		blurShaderIds[2] = LoadShader("blur.frag.glsl", GL_FRAGMENT_SHADER);
-		downSampleShaderIds[1] = LoadShader("alphaMultiply.frag.glsl", GL_FRAGMENT_SHADER);
-		compositShaderIds[1] = LoadShader("composition.frag.glsl", GL_FRAGMENT_SHADER);
+		blurShaderIds[1] = LoadShader("Shaders\\passthrough.vert.glsl", GL_VERTEX_SHADER);
+		blurShaderIds[2] = LoadShader("Shaders\\blur.frag.glsl", GL_FRAGMENT_SHADER);
+		downSampleShaderIds[1] = LoadShader("Shaders\\alphaMultiply.frag.glsl", GL_FRAGMENT_SHADER);
+		compositShaderIds[1] = LoadShader("Shaders\\composition.frag.glsl", GL_FRAGMENT_SHADER);
 
 		GLint ret;
 		CheckShader(blurShaderIds[1], GL_COMPILE_STATUS, &ret, "unable to compile the vertex shader!");
@@ -1122,16 +1122,16 @@ void motion_func(int x, int y) {
 
 void initSatellite() {
 	satellite = new RenderObject();
-	satellite->loadMesh("solar.obj");
-	satellite->loadTexture("carver.dds");
-	satellite->loadTexture("carver-spec.dds");
-	satellite->loadProgram("carver.vertex.glsl", "carver.fragment.glsl");
+	satellite->loadMesh("Mesh\\solar.obj");
+	satellite->loadTexture("Textures\\carver.dds");
+	satellite->loadTexture("Textures\\carver-spec.dds");
+	satellite->loadProgram("Shaders\\carver.vertex.glsl", "Shaders\\carver.fragment.glsl");
 	sat1 = satellite;
 	sat2 = new RenderObject();
-	sat2->loadMesh("carver.obj");
-	sat2->loadTexture("carver.dds");
-	sat2->loadTexture("carver-spec.dds");
-	sat2->loadProgram("carver.vertex.glsl", "carver.fragment.glsl");
+	sat2->loadMesh("Mesh\\carver.obj");
+	sat2->loadTexture("Textures\\carver.dds");
+	sat2->loadTexture("Textures\\carver-spec.dds");
+	sat2->loadProgram("Shaders\\carver.vertex.glsl", "Shaders\\carver.fragment.glsl");
 
 }
 
